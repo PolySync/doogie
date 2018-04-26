@@ -1,0 +1,11 @@
+[package]
+name = "doogie"
+version = "0.0.1"
+authors = ["Devin Smith <dsmith@polysync.io>"]
+
+[dependencies]
+libc = "0.2.0"
+try_from = "0.2.2"
+
+[dev-dependencies]
+proptest = "0.3.3"
