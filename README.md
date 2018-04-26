@@ -83,4 +83,4 @@ that mainly provide coverage around Doogie's capability system and memory safety
 
 © 2018, Devin Smith <dsmith@polysync.io>
 
-[MIT](https://github.com/PolySync/doogie/LICENSE)
+[MIT](https://github.com/PolySync/doogie/blob/master/LICENSE)
