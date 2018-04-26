@@ -32,7 +32,7 @@ present in the `C` library.
 ## Getting Started
 
 ### Dependencies
-* [Install libcmark](https://github.com/commonmark/cmark#installing)
+* [libcmark](https://github.com/commonmark/cmark#installing)
 
 ### Building
 
@@ -71,6 +71,9 @@ The API is organized around capability objects attached to Nodes. Specifically
 Their documentation is best viewed in rustdoc. You can run `cargo doc --open` to view it in your browser.
 
 ## Tests
+
+The tests are located inline with the module code. There is a mix of property based and traditional unit style tests 
+that mainly provide coverage around Doogie's capability system and memory safety.
 
 ### Running Tests
 
