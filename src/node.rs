@@ -1,7 +1,7 @@
 extern crate libc;
-extern crate try_from;
 #[cfg(test)]
 extern crate proptest;
+extern crate try_from;
 
 use std::fmt::{Debug, Formatter};
 use std::fmt;
@@ -9,22 +9,11 @@ use self::try_from::TryFrom;
 use self::libc::{c_int, c_void};
 use std::rc::Rc;
 use std::cell::RefCell;
-use super::{
-    CMarkNodePtr,
-    Node,
-    NodeDestructor,
-    ResourceManager,
-    NodeIterator,
-    IterEventType,
-    CMarkIterPtr,
-    NodeResource,
-    NodeFactory,
-    NodeType,
-    CapabilityFactory,
-};
+use super::{CMarkIterPtr, CMarkNodePtr, CapabilityFactory, IterEventType, Node, NodeDestructor,
+            NodeFactory, NodeIterator, NodeResource, NodeType, ResourceManager};
 
 #[link(name = "cmark")]
-extern {
+extern "C" {
     fn cmark_node_free(node: *mut CMarkNodePtr);
 
     fn cmark_iter_free(iter: *mut CMarkIterPtr) -> c_void;
@@ -38,9 +27,7 @@ extern {
 
 impl NodeFactory {
     pub fn new(capability_factory: CapabilityFactory) -> Self {
-        NodeFactory {
-            capability_factory
-        }
+        NodeFactory { capability_factory }
     }
 
     pub fn build(&self, node_type: NodeType) -> Node {
@@ -80,7 +67,7 @@ impl NodeDestructor {
     pub fn new(resource: NodeResource, manager: Rc<RefCell<ResourceManager>>) -> NodeDestructor {
         NodeDestructor {
             resource: resource,
-            manager: manager
+            manager: manager,
         }
     }
 
@@ -131,10 +118,11 @@ impl Iterator for NodeIterator {
                         let node_p = cmark_iter_get_node(p);
                         let mut manager = self.manager.borrow_mut();
                         let resource = manager.resource_for(node_p);
-                        let capabilities = self.capability_factory.build(&resource, self.manager.clone());
+                        let capabilities = self.capability_factory
+                            .build(&resource, self.manager.clone());
                         let node = Node::new(capabilities);
                         Some((node, event))
-                    },
+                    }
                     _ => None,
                 }
             }
@@ -158,14 +146,7 @@ impl Drop for NodeIterator {
 #[cfg(test)]
 mod tests {
     use super::proptest::prelude::*;
-    use ::{
-        Node,
-        NodeType,
-        ResourceManager,
-        DoogieResult,
-        CapabilityFactory,
-        parse_document
-    };
+    use {parse_document, CapabilityFactory, DoogieResult, Node, NodeType, ResourceManager};
 
     fn arb_content(max_words: usize) -> BoxedStrategy<String> {
         prop::collection::vec("[[:alnum:]]{1,45}", 1..max_words)
@@ -184,7 +165,6 @@ mod tests {
             assert!(false, "No Renderer");
         }
     }
-
 
     #[test]
     fn node_type() {
@@ -275,7 +255,7 @@ mod tests {
                 let _node = Node::new(capabilities);
             }
 
-            assert!(! resource.is_valid());
+            assert!(!resource.is_valid());
         }
     }
 
@@ -313,7 +293,7 @@ mod tests {
                 let _node_two = Node::new(cap_factory.build(&resource, manager.clone()));
             }
 
-            assert!(! resource.is_valid());
+            assert!(!resource.is_valid());
         }
     }
 
@@ -324,9 +304,17 @@ mod tests {
             let manager = ResourceManager::make_shared();
             let resource = manager.borrow_mut().resource_for(pointer);
 
-            let node = Node::new(CapabilityFactory::new().with_getter().build(&resource, manager.clone()));
+            let node = Node::new(
+                CapabilityFactory::new()
+                    .with_getter()
+                    .build(&resource, manager.clone()),
+            );
             {
-                Node::new(CapabilityFactory::new().with_destructor().build(&resource, manager.clone()));
+                Node::new(
+                    CapabilityFactory::new()
+                        .with_destructor()
+                        .build(&resource, manager.clone()),
+                );
             }
 
             if let Some(ref getter) = node.capabilities.get {

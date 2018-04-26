@@ -1,34 +1,16 @@
-extern crate try_from;
 extern crate libc;
+extern crate try_from;
 
 use self::try_from::TryFrom;
 use std::ffi::{CStr, CString};
 use self::libc::{c_char, c_int, c_void};
-use super::{
-    CapabilityFactory,
-    ResourceManager,
-    SharedResourceMut,
-    NodeResource,
-    StructuralMutator,
-    NodeRenderer,
-    NodeDestructor,
-    NodeGetter,
-    NodeSetter,
-    NodeTraverser,
-    Node,
-    NodeCapabilities,
-    CMarkNodePtr,
-    DoogieResult,
-    DoogieError,
-    NodeIterator,
-    DelimType,
-    ListType,
-    NodeType,
-    CMarkIterPtr
-};
+use super::{CMarkIterPtr, CMarkNodePtr, CapabilityFactory, DelimType, DoogieError, DoogieResult,
+            ListType, Node, NodeCapabilities, NodeDestructor, NodeGetter, NodeIterator,
+            NodeRenderer, NodeResource, NodeSetter, NodeTraverser, NodeType, ResourceManager,
+            SharedResourceMut, StructuralMutator};
 
 #[link(name = "cmark")]
-extern {
+extern "C" {
     fn cmark_node_get_literal(node: *mut CMarkNodePtr) -> *const c_char;
 
     fn cmark_node_set_literal(node: *mut CMarkNodePtr, content: *const c_char) -> c_int;
@@ -78,7 +60,6 @@ extern {
     fn cmark_iter_new(node: *mut CMarkNodePtr) -> *mut CMarkIterPtr;
 }
 
-
 impl CapabilityFactory {
     /// Construct a new CapabilityFactory instance.
     pub fn new() -> Self {
@@ -127,36 +108,38 @@ impl CapabilityFactory {
 
     /// Configure this factory to produce a getter capability.
     pub fn with_getter(mut self) -> Self {
-        self.getter_builder = Some(Box::new(|resource| {
-            NodeGetter::new(resource)
-        }));
+        self.getter_builder = Some(Box::new(|resource| NodeGetter::new(resource)));
 
         self
     }
 
     /// Configure this factory to produce a setter capability.
     pub fn with_setter(mut self) -> Self {
-        self.setter_builder = Some(Box::new(|resource| {
-            NodeSetter::new(resource)
-        }));
+        self.setter_builder = Some(Box::new(|resource| NodeSetter::new(resource)));
 
         self
     }
 
     /// Configure this factory to produce a destructor capability.
     pub fn with_destructor(mut self) -> Self {
-        self.destructor_builder = Some(Box::new(move |resource: NodeResource, manager: SharedResourceMut<ResourceManager>| {
-            NodeDestructor::new(resource.clone(), manager.clone())
-        }));
+        self.destructor_builder = Some(Box::new(
+            move |resource: NodeResource, manager: SharedResourceMut<ResourceManager>| {
+                NodeDestructor::new(resource.clone(), manager.clone())
+            },
+        ));
 
         self
     }
 
     /// Configure this factory to produce a traverser capability.
     pub fn with_traverser(mut self) -> Self {
-        self.traverser_builder = Some(Box::new(move |resource: NodeResource, manager: SharedResourceMut<ResourceManager>, cap_factory: CapabilityFactory| {
-            NodeTraverser::new(resource.clone(), manager.clone(), cap_factory)
-        }));
+        self.traverser_builder = Some(Box::new(
+            move |resource: NodeResource,
+                  manager: SharedResourceMut<ResourceManager>,
+                  cap_factory: CapabilityFactory| {
+                NodeTraverser::new(resource.clone(), manager.clone(), cap_factory)
+            },
+        ));
 
         self
     }
@@ -172,16 +155,24 @@ impl CapabilityFactory {
 
     /// Configure this factory to produce a mutator capability.
     pub fn with_mutator(mut self) -> Self {
-        self.mutator_builder = Some(Box::new(move |resource: NodeResource, manager: SharedResourceMut<ResourceManager>, cap_factory: CapabilityFactory| {
-            StructuralMutator::new(resource.clone(), manager.clone(), cap_factory)
-        }));
+        self.mutator_builder = Some(Box::new(
+            move |resource: NodeResource,
+                  manager: SharedResourceMut<ResourceManager>,
+                  cap_factory: CapabilityFactory| {
+                StructuralMutator::new(resource.clone(), manager.clone(), cap_factory)
+            },
+        ));
 
         self
     }
 
     /// Build a NodeCapability instance with the configured capabilities for the given NodeResource
     /// and ResourceManager.
-    pub fn build(&self, resource: &NodeResource, manager: SharedResourceMut<ResourceManager>) -> NodeCapabilities {
+    pub fn build(
+        &self,
+        resource: &NodeResource,
+        manager: SharedResourceMut<ResourceManager>,
+    ) -> NodeCapabilities {
         NodeCapabilities {
             get: if let Some(ref builder) = self.getter_builder {
                 Some((builder)(resource.clone()))
@@ -194,7 +185,11 @@ impl CapabilityFactory {
                 None
             },
             traverse: if let Some(ref builder) = self.traverser_builder {
-                Some((builder)(resource.clone(), manager.clone(), self.make_child_factory()))
+                Some((builder)(
+                    resource.clone(),
+                    manager.clone(),
+                    self.make_child_factory(),
+                ))
             } else {
                 None
             },
@@ -204,7 +199,11 @@ impl CapabilityFactory {
                 None
             },
             mutate: if let Some(ref builder) = self.mutator_builder {
-                Some((builder)(resource.clone(), manager.clone(), self.make_child_factory()))
+                Some((builder)(
+                    resource.clone(),
+                    manager.clone(),
+                    self.make_child_factory(),
+                ))
             } else {
                 None
             },
@@ -212,7 +211,7 @@ impl CapabilityFactory {
                 Some((builder)(resource.clone()))
             } else {
                 None
-            }
+            },
         }
     }
 }
@@ -286,7 +285,9 @@ impl NodeGetter {
     pub fn get_type_string(&self) -> DoogieResult<String> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
             unsafe {
-                Ok(CStr::from_ptr(cmark_node_get_type_string(p)).to_str()?.to_string())
+                Ok(CStr::from_ptr(cmark_node_get_type_string(p))
+                    .to_str()?
+                    .to_string())
             }
         } else {
             Err(DoogieError::ResourceUnavailable)
@@ -296,9 +297,7 @@ impl NodeGetter {
     /// Get the start line from the original CMark document corresponding to this Node.
     pub fn get_start_line(&self) -> DoogieResult<u32> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
-            unsafe {
-                Ok(cmark_node_get_start_line(p) as u32)
-            }
+            unsafe { Ok(cmark_node_get_start_line(p) as u32) }
         } else {
             Err(DoogieError::ResourceUnavailable)
         }
@@ -307,9 +306,7 @@ impl NodeGetter {
     /// Get the start column from the original CMark document corresponding to this Node.
     pub fn get_start_column(&self) -> DoogieResult<u32> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
-            unsafe {
-                Ok(cmark_node_get_start_column(p) as u32)
-            }
+            unsafe { Ok(cmark_node_get_start_column(p) as u32) }
         } else {
             Err(DoogieError::ResourceUnavailable)
         }
@@ -326,9 +323,7 @@ impl NodeGetter {
     /// Get the CMark list type of the Node if applicable.
     pub fn get_list_type(&self) -> DoogieResult<ListType> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
-            unsafe {
-                ListType::try_from(cmark_node_get_list_type(p) as u32)
-            }
+            unsafe { ListType::try_from(cmark_node_get_list_type(p) as u32) }
         } else {
             Err(DoogieError::ResourceUnavailable)
         }
@@ -337,9 +332,7 @@ impl NodeGetter {
     /// Get the CMark delimiter type of the Node if applicable.
     pub fn get_delim_type(&self) -> DoogieResult<DelimType> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
-            unsafe {
-                DelimType::try_from(cmark_node_get_list_delim(p) as u32)
-            }
+            unsafe { DelimType::try_from(cmark_node_get_list_delim(p) as u32) }
         } else {
             Err(DoogieError::ResourceUnavailable)
         }
@@ -348,9 +341,7 @@ impl NodeGetter {
     /// Get the heading level of the Node if applicable.
     pub fn get_heading_level(&self) -> DoogieResult<u32> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
-            unsafe {
-                Ok(cmark_node_get_heading_level(p) as u32)
-            }
+            unsafe { Ok(cmark_node_get_heading_level(p) as u32) }
         } else {
             Err(DoogieError::ResourceUnavailable)
         }
@@ -359,9 +350,7 @@ impl NodeGetter {
     /// Get the url of the Node if applicable.
     pub fn get_url(&self) -> DoogieResult<String> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
-            unsafe {
-                Ok(CStr::from_ptr(cmark_node_get_url(p)).to_str()?.to_string())
-            }
+            unsafe { Ok(CStr::from_ptr(cmark_node_get_url(p)).to_str()?.to_string()) }
         } else {
             Err(DoogieError::ResourceUnavailable)
         }
@@ -371,7 +360,9 @@ impl NodeGetter {
     pub fn get_title(&self) -> DoogieResult<String> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
             unsafe {
-                Ok(CStr::from_ptr(cmark_node_get_title(p)).to_str()?.to_string())
+                Ok(CStr::from_ptr(cmark_node_get_title(p))
+                    .to_str()?
+                    .to_string())
             }
         } else {
             Err(DoogieError::ResourceUnavailable)
@@ -382,7 +373,9 @@ impl NodeGetter {
     pub fn get_fence_info(&self) -> DoogieResult<String> {
         if let Some(p) = *self.resource.node_pointer.borrow() {
             unsafe {
-                Ok(CStr::from_ptr(cmark_node_get_fence_info(p)).to_str()?.to_string())
+                Ok(CStr::from_ptr(cmark_node_get_fence_info(p))
+                    .to_str()?
+                    .to_string())
             }
         } else {
             Err(DoogieError::ResourceUnavailable)
@@ -419,7 +412,7 @@ impl NodeSetter {
 
                 match cmark_node_set_literal(p, content.as_ptr()) {
                     1 => Ok(1 as u32),
-                    i => Err(DoogieError::ReturnCode(i as u32))
+                    i => Err(DoogieError::ReturnCode(i as u32)),
                 }
             }
         } else {
@@ -435,7 +428,7 @@ impl NodeSetter {
 
                 match cmark_node_set_fence_info(p, info.as_ptr()) {
                     1 => Ok(1),
-                    err => Err(DoogieError::ReturnCode(err as u32))
+                    err => Err(DoogieError::ReturnCode(err as u32)),
                 }
             }
         } else {
@@ -456,8 +449,7 @@ impl NodeTraverser {
                 } else {
                     let mut manager = self.manager.borrow_mut();
                     let resource = manager.resource_for(next_node_ptr);
-                    let capabilities =
-                        self.cap_factory.build(&resource,self.manager.clone());
+                    let capabilities = self.cap_factory.build(&resource, self.manager.clone());
                     Ok(Some(Node::new(capabilities)))
                 }
             }
@@ -563,11 +555,9 @@ impl NodeTraverser {
         capabilities.destructor_builder = None;
 
         match *self.resource.node_pointer.borrow() {
-            Some(p) => {
-                unsafe {
-                    let iter_p = cmark_iter_new(p);
-                    NodeIterator::new(Some(iter_p), self.manager.clone(), capabilities)
-                }
+            Some(p) => unsafe {
+                let iter_p = cmark_iter_new(p);
+                NodeIterator::new(Some(iter_p), self.manager.clone(), capabilities)
             },
             _ => NodeIterator::new(None, self.manager.clone(), capabilities),
         }
@@ -634,10 +624,11 @@ impl StructuralMutator {
                         let mut _manager = self.manager.borrow_mut();
                         _manager.absorb(&child_manager);
                         let child_resource = _manager.resource_for(child_p);
-                        child.capabilities = self.cap_factory.build(&child_resource, self.manager.clone());
+                        child.capabilities = self.cap_factory
+                            .build(&child_resource, self.manager.clone());
                         Ok(1)
-                    },
-                    i => Err(DoogieError::ReturnCode(i as u32))
+                    }
+                    i => Err(DoogieError::ReturnCode(i as u32)),
                 }
             }
         } else {
@@ -651,7 +642,7 @@ impl NodeRenderer {
     pub fn render_commonmark(&self) -> String {
         if let Some(node_pointer) = *self.resource.node_pointer.borrow() {
             unsafe {
-                CStr::from_ptr(cmark_render_commonmark(node_pointer, 0, ))
+                CStr::from_ptr(cmark_render_commonmark(node_pointer, 0))
                     .to_string_lossy()
                     .into_owned()
             }
@@ -663,7 +654,7 @@ impl NodeRenderer {
     pub fn render_xml(&self) -> String {
         if let Some(node_pointer) = *self.resource.node_pointer.borrow() {
             unsafe {
-                CStr::from_ptr(cmark_render_xml(node_pointer, 0, ))
+                CStr::from_ptr(cmark_render_xml(node_pointer, 0))
                     .to_string_lossy()
                     .into_owned()
             }

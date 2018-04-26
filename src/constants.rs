@@ -1,10 +1,7 @@
 extern crate try_from;
 
 use self::try_from::TryFrom;
-use super::{
-    DoogieResult,
-    DoogieError
-};
+use super::{DoogieError, DoogieResult};
 
 /// Each NodeIterator step is parameterized by one of these event.
 #[derive(PartialEq, Debug)]
@@ -34,11 +31,11 @@ impl TryFrom<u32> for IterEventType {
 
     fn try_from(original: u32) -> DoogieResult<IterEventType> {
         match original {
-            0 => Ok(IterEventType::None ),
-            1 => Ok(IterEventType::Done ),
-            2 => Ok(IterEventType::Enter ),
-            3 => Ok(IterEventType::Exit ),
-            i => Err(DoogieError::BadEnum(i))
+            0 => Ok(IterEventType::None),
+            1 => Ok(IterEventType::Done),
+            2 => Ok(IterEventType::Enter),
+            3 => Ok(IterEventType::Exit),
+            i => Err(DoogieError::BadEnum(i)),
         }
     }
 }
@@ -155,7 +152,7 @@ impl TryFrom<u32> for ListType {
             0 => Ok(ListType::CMarkNoList),
             1 => Ok(ListType::CMarkBulletList),
             2 => Ok(ListType::CMarkOrderedList),
-            i => Err(DoogieError::BadEnum(i))
+            i => Err(DoogieError::BadEnum(i)),
         }
     }
 }
@@ -165,7 +162,7 @@ impl TryFrom<u32> for ListType {
 pub enum DelimType {
     CMarkNoDelim,
     CMarkPeriodDelim,
-    CMarkParenDelim
+    CMarkParenDelim,
 }
 
 impl From<DelimType> for u32 {
@@ -186,7 +183,7 @@ impl TryFrom<u32> for DelimType {
             0 => Ok(DelimType::CMarkNoDelim),
             1 => Ok(DelimType::CMarkPeriodDelim),
             2 => Ok(DelimType::CMarkParenDelim),
-            i => Err(DoogieError::BadEnum(i))
+            i => Err(DoogieError::BadEnum(i)),
         }
     }
 }

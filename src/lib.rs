@@ -1,5 +1,6 @@
 #[cfg(test)]
-#[macro_use] extern crate proptest;
+#[macro_use]
+extern crate proptest;
 
 extern crate libc;
 
@@ -14,12 +15,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use errors::DoogieError;
-use constants::{
-    IterEventType,
-    NodeType,
-    ListType,
-    DelimType
-};
+use constants::{DelimType, IterEventType, ListType, NodeType};
 
 pub type DoogieResult<T> = Result<T, DoogieError>;
 type NodeResource = Rc<CMarkNodeResource>;
@@ -29,7 +25,7 @@ pub enum CMarkNodePtr {}
 enum CMarkIterPtr {}
 
 #[link(name = "cmark")]
-extern {
+extern "C" {
     fn cmark_parse_document(buffer: *const u8, len: size_t, options: c_int) -> *mut CMarkNodePtr;
 }
 
@@ -78,7 +74,7 @@ impl Node {
 }
 
 pub struct NodeFactory {
-    capability_factory: CapabilityFactory
+    capability_factory: CapabilityFactory,
 }
 
 /// The set of capabilities a Node instance possesses.
@@ -96,30 +92,26 @@ pub struct NodeCapabilities {
 /// Provides read-only access to Node fields.
 pub struct NodeGetter {
     /// NodeResource of the accessed Node.
-    resource: NodeResource
+    resource: NodeResource,
 }
 
 impl NodeGetter {
     /// Construct a new NodeGetter instance.
     fn new(resource: NodeResource) -> NodeGetter {
-        NodeGetter {
-            resource
-        }
+        NodeGetter { resource }
     }
 }
 
 /// Write-only access to Node fields.
 pub struct NodeSetter {
     /// NodeResource of the target Node.
-    resource: NodeResource
+    resource: NodeResource,
 }
 
 impl NodeSetter {
     /// Construct a new NodeSetter instance.
     fn new(resource: NodeResource) -> NodeSetter {
-        NodeSetter {
-            resource
-        }
+        NodeSetter { resource }
     }
 }
 
@@ -134,14 +126,16 @@ pub struct NodeTraverser {
     /// This ResourceManager.
     manager: SharedResourceMut<ResourceManager>,
     /// Factory for constructing the capabilities for the accessed Nodes.
-    cap_factory: CapabilityFactory
+    cap_factory: CapabilityFactory,
 }
 
 impl NodeTraverser {
     /// Construct a new NodeTraverser instance.
-    fn new(resource: NodeResource,
-           manager: SharedResourceMut<ResourceManager>,
-           cap_factory: CapabilityFactory) -> NodeTraverser {
+    fn new(
+        resource: NodeResource,
+        manager: SharedResourceMut<ResourceManager>,
+        cap_factory: CapabilityFactory,
+    ) -> NodeTraverser {
         NodeTraverser {
             resource,
             manager,
@@ -157,16 +151,20 @@ pub struct StructuralMutator {
     /// ResourceManager that is tracking the current Node.
     manager: SharedResourceMut<ResourceManager>,
     /// Capability factory that will be inherited by any mutated document sub-trees.
-    cap_factory: CapabilityFactory
+    cap_factory: CapabilityFactory,
 }
 
 impl StructuralMutator {
     /// Construct a new StructuralMutator instance.
-    fn new(resource: NodeResource, manager: SharedResourceMut<ResourceManager>, cap_factory: CapabilityFactory) -> StructuralMutator {
+    fn new(
+        resource: NodeResource,
+        manager: SharedResourceMut<ResourceManager>,
+        cap_factory: CapabilityFactory,
+    ) -> StructuralMutator {
         StructuralMutator {
             resource,
             manager,
-            cap_factory
+            cap_factory,
         }
     }
 }
@@ -174,7 +172,7 @@ impl StructuralMutator {
 /// Methods for rendering a document tree into supported textual formats.
 pub struct NodeRenderer {
     /// The NodeResource of the current Node.
-    resource: NodeResource
+    resource: NodeResource,
 }
 
 impl NodeRenderer {
@@ -210,14 +208,16 @@ pub struct NodeIterator {
     /// ResourceManager that will manage the resources of any returned Nodes.
     manager: SharedResourceMut<ResourceManager>,
     /// Iterated Nodes will receive their capabilities from this factory.
-    capability_factory: CapabilityFactory
+    capability_factory: CapabilityFactory,
 }
 
 impl NodeIterator {
     /// Construct a new iterator instance.
-    fn new(iter_p: Option<*mut CMarkIterPtr>,
-           manager: SharedResourceMut<ResourceManager>,
-           capability_factory: CapabilityFactory) -> NodeIterator {
+    fn new(
+        iter_p: Option<*mut CMarkIterPtr>,
+        manager: SharedResourceMut<ResourceManager>,
+        capability_factory: CapabilityFactory,
+    ) -> NodeIterator {
         NodeIterator {
             iter_p,
             manager,
@@ -234,7 +234,7 @@ struct NodeDestructor {
     /// NodeResource for the current Node.
     resource: NodeResource,
     /// Manager for the resources of this Node and its descendants.
-    manager: Rc<RefCell<ResourceManager>>
+    manager: Rc<RefCell<ResourceManager>>,
 }
 
 /// Encapsulates the memory resources of a Node as allocated by libcmark.
@@ -266,25 +266,29 @@ pub struct CapabilityFactory {
     /// Constructs a NodeSetter if present.
     setter_builder: Option<Box<Fn(NodeResource) -> NodeSetter>>,
     /// Constructs a NodeDestructor if present.
-    destructor_builder: Option<Box<Fn(NodeResource, SharedResourceMut<ResourceManager>) -> NodeDestructor>>,
+    destructor_builder:
+        Option<Box<Fn(NodeResource, SharedResourceMut<ResourceManager>) -> NodeDestructor>>,
     /// Constructs a NodeTraverser if present.
-    traverser_builder: Option<Box<Fn(NodeResource, SharedResourceMut<ResourceManager>, CapabilityFactory) -> NodeTraverser>>,
+    traverser_builder: Option<
+        Box<
+            Fn(NodeResource, SharedResourceMut<ResourceManager>, CapabilityFactory)
+                -> NodeTraverser,
+        >,
+    >,
     /// Constructs a StructuralMutator if present.
-    mutator_builder: Option<Box<Fn(NodeResource, SharedResourceMut<ResourceManager>, CapabilityFactory) -> StructuralMutator>>,
+    mutator_builder: Option<
+        Box<
+            Fn(NodeResource, SharedResourceMut<ResourceManager>, CapabilityFactory)
+                -> StructuralMutator,
+        >,
+    >,
     /// Constructs a NodeRenderer if present.
-    renderer_builder: Option<Box<Fn(NodeResource) -> NodeRenderer>>
+    renderer_builder: Option<Box<Fn(NodeResource) -> NodeRenderer>>,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Node,
-        NodeType,
-        IterEventType,
-        ResourceManager,
-        SharedResourceMut,
-        parse_document
-    };
+    use super::{parse_document, IterEventType, Node, NodeType, ResourceManager, SharedResourceMut};
 
     #[test]
     fn test_new_node_gets_getter() {
@@ -557,7 +561,6 @@ mod tests {
             }
 
             assert_eq!(traverser.manager.borrow().resources.len() * 2, node_count);
-
         } else {
             panic!("Test node should have traverser");
         }
@@ -584,12 +587,12 @@ mod tests {
         }
 
         for (_id, resource) in manager.borrow().resources.iter() {
-            assert!(! resource.is_valid());
+            assert!(!resource.is_valid());
         }
 
         for node in &nodes {
             if let Some(ref getter) = node.capabilities.get {
-                assert!(! getter.resource.is_valid());
+                assert!(!getter.resource.is_valid());
             }
         }
 

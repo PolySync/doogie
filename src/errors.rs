@@ -11,7 +11,7 @@ pub enum DoogieError {
     ReturnCode(u32),
     BadEnum(u32),
     IOError(IOError),
-    ResourceUnavailable
+    ResourceUnavailable,
 }
 
 impl fmt::Display for DoogieError {
@@ -22,7 +22,7 @@ impl fmt::Display for DoogieError {
             DoogieError::IOError(ref err) => write!(f, "IOError: {}", err),
             DoogieError::ReturnCode(code) => write!(f, "CMark return code: {}", code),
             DoogieError::BadEnum(num) => write!(f, "Bad Enum Value: {}", num),
-            DoogieError::ResourceUnavailable => write!(f, "The resource is no longer available")
+            DoogieError::ResourceUnavailable => write!(f, "The resource is no longer available"),
         }
     }
 }
@@ -35,7 +35,7 @@ impl error::Error for DoogieError {
             DoogieError::IOError(ref err) => err.description(),
             DoogieError::ReturnCode(_code) => "libcmark returned bad status code.",
             DoogieError::BadEnum(_num) => "libcmark returned a non-matching enum value.",
-            DoogieError::ResourceUnavailable => "The resource is no longer available."
+            DoogieError::ResourceUnavailable => "The resource is no longer available.",
         }
     }
 
@@ -46,7 +46,7 @@ impl error::Error for DoogieError {
             DoogieError::IOError(ref err) => Some(err),
             DoogieError::ReturnCode(_code) => None,
             DoogieError::BadEnum(_num) => None,
-            DoogieError::ResourceUnavailable => None
+            DoogieError::ResourceUnavailable => None,
         }
     }
 }
@@ -64,5 +64,7 @@ impl From<Utf8Error> for DoogieError {
 }
 
 impl From<IOError> for DoogieError {
-    fn from(err: IOError) -> DoogieError { DoogieError::IOError(err) }
+    fn from(err: IOError) -> DoogieError {
+        DoogieError::IOError(err)
+    }
 }

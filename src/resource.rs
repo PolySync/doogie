@@ -1,23 +1,16 @@
 extern crate libc;
 extern crate try_from;
 
-use self::libc::{c_int};
+use self::libc::c_int;
 use self::try_from::TryFrom;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use super::{
-    ResourceManager,
-    SharedResourceMut,
-    NodeResource,
-    CMarkNodePtr,
-    CMarkIterPtr,
-    IterEventType,
-    CMarkNodeResource
-};
+use super::{CMarkIterPtr, CMarkNodePtr, CMarkNodeResource, IterEventType, NodeResource,
+            ResourceManager, SharedResourceMut};
 
 #[link(name = "cmark")]
-extern {
+extern "C" {
     fn cmark_iter_new(node: *mut CMarkNodePtr) -> *mut CMarkIterPtr;
 
     fn cmark_iter_next(iter: *mut CMarkIterPtr) -> c_int;
@@ -46,7 +39,7 @@ impl ResourceManager {
     /// Construct a new ResourceManager instance.
     pub fn new() -> ResourceManager {
         ResourceManager {
-            resources: HashMap::new()
+            resources: HashMap::new(),
         }
     }
 
@@ -62,9 +55,9 @@ impl ResourceManager {
     pub fn resource_for(&mut self, node_pointer: *mut CMarkNodePtr) -> NodeResource {
         let id = node_pointer as u32;
 
-        let resource = self.resources.entry(id).or_insert_with(|| {
-            Rc::new(CMarkNodeResource::new(node_pointer))
-        });
+        let resource = self.resources
+            .entry(id)
+            .or_insert_with(|| Rc::new(CMarkNodeResource::new(node_pointer)));
 
         resource.clone()
     }
@@ -93,7 +86,9 @@ impl ResourceManager {
 
                 loop {
                     if let Ok(event) = IterEventType::try_from(cmark_iter_next(iter_p) as u32) {
-                        if event == IterEventType::Done { break; }
+                        if event == IterEventType::Done {
+                            break;
+                        }
 
                         let current_p = cmark_iter_get_node(iter_p);
                         if let Some(resource) = self.resources.get(&(current_p as u32)) {
@@ -122,7 +117,9 @@ impl ResourceManager {
 
                 loop {
                     if let Ok(event) = IterEventType::try_from(cmark_iter_next(iter_p) as u32) {
-                        if event == IterEventType::Done { break; }
+                        if event == IterEventType::Done {
+                            break;
+                        }
                         let node_ptr = cmark_iter_get_node(iter_p);
                         let id = node_ptr as u32;
                         if let Some(resource) = self.resources.remove(&id) {
