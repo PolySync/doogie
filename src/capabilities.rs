@@ -41,12 +41,6 @@ extern {
 
     fn cmark_node_get_start_column(node: *mut CMarkNodePtr) -> c_int;
 
-    // Todo -- Implement wrapper
-//    fn cmark_node_get_user_data(node: *mut CMarkNodePtr) -> *mut c_void;
-
-    // Todo -- Implement wrapper
-//    fn cmark_node_set_user_data(node: *mut CMarkNodePtr, data: *mut c_void) -> c_int;
-
     fn cmark_node_get_list_type(node: *mut CMarkNodePtr) -> c_int;
 
     fn cmark_node_get_list_delim(node: *mut CMarkNodePtr) -> c_int;

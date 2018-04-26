@@ -234,33 +234,6 @@ mod tests {
         }
     }
 
-//    proptest! {
-//        #[test]
-//        fn set_and_get_id(ref id in prop::num::u32::ANY) {
-//            unsafe {
-//                let node_ptr = super::cmark_node_new(NodeType::CMarkNodeParagraph as u32);
-//                let manager = ResourceManager::make_shared();
-//                let resource = manager.borrow_mut().resource_for(node_ptr);
-//                let capabilities = CapabilityFactory::new()
-//                    .with_destructor()
-//                    .with_getter()
-//                    .with_setter()
-//                    .build(&resource, manager);
-//                let node = Node::new(capabilities);
-//                let mut result: u32 = Default::default();
-//
-//                if let Some(ref setter) = node.capabilities.set {
-//                    setter.set_id(*id).unwrap();
-//                }
-//                if let Some(ref getter) = node.capabilities.get {
-//                    result = getter.get_id().unwrap();
-//                }
-//
-//                assert_eq!(*id, result);
-//            }
-//        }
-//    }
-
     proptest! {
         #[test]
         fn test_fence_info_get_set(ref content in arb_content(10)){
@@ -374,29 +347,4 @@ mod tests {
         assert!(traverser.first_child().unwrap().is_some());
         assert!(traverser.first_child().unwrap().is_some());
     }
-//
-//    #[test]
-//    fn test_append_child() {
-//        unsafe {
-//            let doc_pointer = super::cmark_node_new(NodeType::CMarkNodeDocument as u32);
-//            let manager = ResourceManager::make_shared();
-//            let doc_resource = manager.borrow_mut().resource_for(doc_pointer);
-//            let doc_node = Node::new(CapabilityFactory::new().with_all().build(&doc_resource, manager.clone()));
-//            let paragraph_pointer = super::cmark_node_new(NodeType::CMarkNodeParagraph as u32);
-//            let paragraph_resource = manager.borrow_mut().resource_for(paragraph_pointer);
-//            let mut paragraph_node = Node::new(CapabilityFactory::new().build(&paragraph_resource, manager.clone()));
-//
-//            let mutator = doc_node.capabilities.mutate.as_ref().unwrap();
-//            mutator.append_child(&mut paragraph_node);
-//
-//            let traverser = doc_node.capabilities.traverse.as_ref().unwrap();
-//            if let Some(first_child) = traverser.first_child().unwrap() {
-//                let child_getter = first_child.capabilities.get.as_ref().unwrap();
-//                assert_eq!(paragraph_pointer as u32, child_getter.get_id().unwrap());
-//            } else {
-//                assert!(false, "Child is missing");
-//            }
-//
-//        }
-//    }
 }
