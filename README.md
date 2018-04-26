@@ -1,5 +1,5 @@
 <!--
-© 2018, Devin Smith <dsmith@polysync.io>
+© 2018, PolySync Technologies, Inc., Devin Smith <dsmith@polysync.io>
 
 This file is part of Doogie
 
@@ -81,6 +81,6 @@ that mainly provide coverage around Doogie's capability system and memory safety
 
 # License
 
-© 2018, Devin Smith <dsmith@polysync.io>
+© 2018, PolySync Technologies, Inc., Devin Smith <dsmith@polysync.io>
 
 [MIT](https://github.com/PolySync/doogie/blob/master/LICENSE)
