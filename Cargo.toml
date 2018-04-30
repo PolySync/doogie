@@ -1,6 +1,6 @@
 [package]
 name = "doogie"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Devin Smith <dsmith@polysync.io>"]
 
 [dependencies]
