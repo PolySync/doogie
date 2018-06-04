@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use super::{CMarkIterPtr, CMarkNodePtr, CMarkNodeResource, IterEventType, NodeResource,
             ResourceManager, SharedResourceMut};
 
-#[link(name = "cmark")]
 extern "C" {
     fn cmark_iter_new(node: *mut CMarkNodePtr) -> *mut CMarkIterPtr;
 

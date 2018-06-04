@@ -9,7 +9,6 @@ use super::{CMarkIterPtr, CMarkNodePtr, CapabilityFactory, DelimType, DoogieErro
             NodeRenderer, NodeResource, NodeSetter, NodeTraverser, NodeType, ResourceManager,
             SharedResourceMut, StructuralMutator};
 
-#[link(name = "cmark")]
 extern "C" {
     fn cmark_node_get_literal(node: *mut CMarkNodePtr) -> *const c_char;
 

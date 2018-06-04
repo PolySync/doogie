@@ -1,7 +1,8 @@
 [package]
 name = "doogie"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Devin Smith <dsmith@polysync.io>"]
+build = "build.rs"
 
 [dependencies]
 libc = "0.2.0"
@@ -9,3 +10,6 @@ try_from = "0.2.2"
 
 [dev-dependencies]
 proptest = "0.3.3"
+
+[build-dependencies]
+cmake = "0.1"

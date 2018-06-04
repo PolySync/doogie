@@ -12,7 +12,6 @@ use std::cell::RefCell;
 use super::{CMarkIterPtr, CMarkNodePtr, CapabilityFactory, IterEventType, Node, NodeDestructor,
             NodeFactory, NodeIterator, NodeResource, NodeType, ResourceManager};
 
-#[link(name = "cmark")]
 extern "C" {
     fn cmark_node_free(node: *mut CMarkNodePtr);
 
