@@ -24,7 +24,6 @@ type SharedResourceMut<T> = Rc<RefCell<T>>;
 pub enum CMarkNodePtr {}
 enum CMarkIterPtr {}
 
-#[link(name = "cmark")]
 extern "C" {
     fn cmark_parse_document(buffer: *const u8, len: size_t, options: c_int) -> *mut CMarkNodePtr;
 }
