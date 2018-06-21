@@ -40,8 +40,8 @@ impl TryFrom<u32> for IterEventType {
     }
 }
 
-/// Each Node in the document tree possesses a type attribute that corresponds to it's equivalent
-/// CommonMark semantic element.
+/// Each Node in the libcmark document AST possesses a type attribute that corresponds to it's
+/// equivalent CommonMark semantic element.
 #[derive(PartialEq, Debug, Clone)]
 pub enum NodeType {
     CMarkNodeNone,
@@ -126,7 +126,7 @@ impl TryFrom<u32> for NodeType {
     }
 }
 
-/// List Nodes have one of these types associated with them.
+/// List elements have one of these types associated with them
 #[derive(PartialEq)]
 pub enum ListType {
     CMarkNoList,
@@ -157,7 +157,7 @@ impl TryFrom<u32> for ListType {
     }
 }
 
-/// Ordered List items have a delimiter attribute.
+/// Ordered List items have a delimiter attribute
 #[derive(PartialEq)]
 pub enum DelimType {
     CMarkNoDelim,
@@ -187,3 +187,100 @@ impl TryFrom<u32> for DelimType {
         }
     }
 }
+
+/// Valid child types of Document elements
+pub const DOCUMENT_CHILDREN: &[NodeType] = &[
+    NodeType::CMarkNodeParagraph,
+    NodeType::CMarkNodeHeading,
+    NodeType::CMarkNodeThematicBreak,
+    NodeType::CMarkNodeCodeBlock,
+    NodeType::CMarkNodeHtmlBlock,
+    NodeType::CMarkNodeCustomBlock,
+    NodeType::CMarkNodeList,
+    NodeType::CMarkNodeBlockQuote
+];
+
+/// Valid child types of List Item elements
+pub const ITEM_CHILDREN: &[NodeType] = DOCUMENT_CHILDREN;
+
+/// Valid child types of Block Quote elements
+pub const BLOCK_QUOTE_CHILDREN: &[NodeType] = DOCUMENT_CHILDREN;
+
+/// Valid child types of Code Block elements
+pub const CODE_BLOCK_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of HTML Block elements
+pub const HTML_BLOCK_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of Custom Block elements
+pub const CUSTOM_BLOCK_CHILDREN: &[NodeType] = &[
+    NodeType::CMarkNodeBlockQuote,
+    NodeType::CMarkNodeList,
+    NodeType::CMarkNodeItem,
+    NodeType::CMarkNodeCodeBlock,
+    NodeType::CMarkNodeHtmlBlock,
+    NodeType::CMarkNodeCustomBlock,
+    NodeType::CMarkNodeParagraph,
+    NodeType::CMarkNodeHeading,
+    NodeType::CMarkNodeThematicBreak ,
+    NodeType::CMarkNodeText ,
+    NodeType::CMarkNodeSoftbreak ,
+    NodeType::CMarkNodeLinebreak ,
+    NodeType::CMarkNodeCode ,
+    NodeType::CMarkNodeHtmlInline ,
+    NodeType::CMarkNodeCustomInline ,
+    NodeType::CMarkNodeEmph ,
+    NodeType::CMarkNodeStrong ,
+    NodeType::CMarkNodeLink ,
+    NodeType::CMarkNodeImage ,
+];
+
+/// Valid child types of Paragraph elements
+pub const PARAGRAPH_CHILDREN: &[NodeType] = &[
+    NodeType::CMarkNodeText,
+    NodeType::CMarkNodeEmph,
+    NodeType::CMarkNodeCode,
+    NodeType::CMarkNodeLink,
+    NodeType::CMarkNodeImage,
+    NodeType::CMarkNodeSoftbreak,
+    NodeType::CMarkNodeLinebreak,
+    NodeType::CMarkNodeHtmlInline,
+    NodeType::CMarkNodeCustomInline,
+    NodeType::CMarkNodeStrong,
+];
+
+/// Valid child types of HEADING elements
+pub const HEADING_CHILDREN: &[NodeType] = PARAGRAPH_CHILDREN;
+
+/// Valid child types of Thematic Break elements
+pub const THEMATIC_BREAK_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of Text elements
+pub const TEXT_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of Soft Break elements
+pub const SOFT_BREAK_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of Line Break elements
+pub const LINE_BREAK_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of inline Code elements
+pub const CODE_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of inline HTML elements
+pub const INLINE_HTML_CHILDREN: &[NodeType] = &[];
+
+/// Valid child types of Custom Inline elements
+pub const CUSTOM_INLINE_CHILDREN: &[NodeType] = PARAGRAPH_CHILDREN;
+
+/// Valid child types of Emph elements
+pub const EMPH_CHILDREN: &[NodeType] = PARAGRAPH_CHILDREN;
+
+/// Valid child types of Strong elements
+pub const STRONG_CHILDREN: &[NodeType] = PARAGRAPH_CHILDREN;
+
+/// Valid child types of Link elements
+pub const LINK_CHILDREN: &[NodeType] = PARAGRAPH_CHILDREN;
+
+/// Valid child types of Image elements
+pub const IMAGE_CHILDREN: &[NodeType] = PARAGRAPH_CHILDREN;
