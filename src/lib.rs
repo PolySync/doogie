@@ -493,6 +493,31 @@ impl CodeBlock {
             }
         }
     }
+
+    /// Returns the textual content of the current Code Block element
+    pub fn get_content(&self) -> DoogieResult<String> {
+        unsafe {
+            let result = cmark_node_get_literal(self.resource.pointer);
+            if result.is_null() {
+                return Ok(String::new());
+            } else {
+                return Ok(CStr::from_ptr(result).to_str()?.to_string());
+            }
+        }
+    }
+
+    /// Sets the textual content of the current Code Block element
+    pub fn set_content(&self, content: &String) -> DoogieResult<u32> {
+        unsafe {
+            let content = CString::new(content.as_bytes())?;
+
+            match cmark_node_set_literal(self.resource.pointer, content.as_ptr()) {
+                1 => Ok(1 as u32),
+                i => Err(DoogieError::ReturnCode(i as u32)),
+            }
+        }
+    }
+
 }
 
 /// Represents a block of HTML in CommonMark
