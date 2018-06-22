@@ -182,7 +182,12 @@ impl Node {
             manager
         };
 
-        match Self::get_cmark_type(pointer)? {
+        let cmark_type: NodeType;
+        unsafe {
+            cmark_type = NodeType::try_from(cmark_node_get_type(pointer) as u32)?;
+        }
+
+        match cmark_type {
             NodeType::CMarkNodeNone => Err(DoogieError::NodeNone),
             NodeType::CMarkNodeDocument => Ok(Node::Document(Document {resource})),
             NodeType::CMarkNodeList => Ok(Node::List(List {resource})),
@@ -208,9 +213,9 @@ impl Node {
     }
 
     /// Returns the equivalent of a libcmark NodeType enum
-    fn get_cmark_type(pointer: *mut CMarkNodePtr) -> DoogieResult<NodeType> {
+    pub fn get_cmark_type(&self) -> DoogieResult<NodeType> {
         unsafe {
-            let t = cmark_node_get_type(pointer);
+            let t = cmark_node_get_type(self.as_resource().pointer);
             Ok(NodeType::try_from(t as u32)?)
         }
     }
@@ -358,10 +363,10 @@ impl Node {
     }
 
     /// Determines if the given Node is a potentially valid child of the current Node
-    pub fn can_append_child(&self, child: &Node) -> bool {
-        let child_type = Node::get_cmark_type(child.as_resource().pointer).unwrap();
+    pub fn can_append_child(&self, child: &Node) -> DoogieResult<bool> {
+        let child_type = child.get_cmark_type()?;
 
-        match self {
+        let result = match self {
             Node::Document(_) => DOCUMENT_CHILDREN.contains(&child_type),
             Node::BlockQuote(_) => BLOCK_QUOTE_CHILDREN.contains(&child_type),
             Node::List(_) => child_type == NodeType::CMarkNodeItem,
@@ -382,7 +387,9 @@ impl Node {
             Node::Strong(_) => STRONG_CHILDREN.contains(&child_type),
             Node::Link(_) => LINK_CHILDREN.contains(&child_type),
             Node::Image(_) => IMAGE_CHILDREN.contains(&child_type),
-        }
+        };
+
+        Ok(result)
     }
 
     /// Renders the document AST rooted at the current Node into textual CommonMark form
