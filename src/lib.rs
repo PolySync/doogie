@@ -945,16 +945,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(DOCUMENT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid document child, but was", other_type),
-                    false => assert!( ! DOCUMENT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid document child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(DOCUMENT_CHILDREN.contains(&other_type), "{:?} should not have been a valid document child, but was", other_type),
+                    false => assert!( ! DOCUMENT_CHILDREN.contains(&other_type), "{:?} should be a valid document child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! DOCUMENT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(DOCUMENT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! DOCUMENT_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(DOCUMENT_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -969,16 +969,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(BLOCK_QUOTE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(BLOCK_QUOTE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -993,18 +993,18 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
+                match doc_node.can_append_child(&other_node).unwrap() {
                     true => assert_eq!(
                         NodeType::CMarkNodeItem,
-                        Node::get_cmark_type(other_pointer).unwrap(),
+                        other_type,
                         "{:?} should not have been a valid child, but was",
                         other_type
                     ),
                     false => assert_ne!(
                         NodeType::CMarkNodeItem,
-                        Node::get_cmark_type(other_pointer).unwrap(),
+                        other_type,
                         "{:?} should be a valid block quote child, but was not",
                         other_type
                     )
@@ -1013,14 +1013,14 @@ mod tests {
                 match doc_node.append_child(&other_node) {
                     Ok(_) => assert_eq!(
                         NodeType::CMarkNodeItem,
-                        Node::get_cmark_type(other_pointer).unwrap()
-                        , "{:?} should not have been able to append, but was",
+                        other_type,
+                        "{:?} should not have been able to append, but was",
                         other_type
                     ),
                     Err(_) => assert_ne!(
                         NodeType::CMarkNodeItem,
-                        Node::get_cmark_type(other_pointer).unwrap()
-                        , "{:?} should be able to append, but was not",
+                        other_type,
+                        "{:?} should be able to append, but was not",
                         other_type),
                 }
             }
@@ -1036,16 +1036,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(ITEM_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! ITEM_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(ITEM_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! ITEM_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! ITEM_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(ITEM_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! ITEM_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(ITEM_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1060,16 +1060,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(CODE_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CODE_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CODE_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CODE_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1084,16 +1084,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(HTML_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! HTML_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! HTML_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(HTML_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1108,16 +1108,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(CUSTOM_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CUSTOM_BLOCK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1132,16 +1132,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(PARAGRAPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! PARAGRAPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! PARAGRAPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(PARAGRAPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1156,16 +1156,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(HEADING_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! HEADING_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(HEADING_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! HEADING_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! HEADING_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(HEADING_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! HEADING_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(HEADING_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1181,16 +1181,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(THEMATIC_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(THEMATIC_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1205,16 +1205,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(TEXT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! TEXT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(TEXT_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! TEXT_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! TEXT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(TEXT_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! TEXT_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(TEXT_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1229,16 +1229,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(SOFT_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! SOFT_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! SOFT_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(SOFT_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1253,16 +1253,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(LINE_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! LINE_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! LINE_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(LINE_BREAK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1277,16 +1277,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(CODE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CODE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(CODE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! CODE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CODE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CODE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! CODE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(CODE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1301,16 +1301,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(INLINE_HTML_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! INLINE_HTML_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! INLINE_HTML_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(INLINE_HTML_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1326,16 +1326,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(CUSTOM_INLINE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CUSTOM_INLINE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1350,16 +1350,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(EMPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! EMPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(EMPH_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! EMPH_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! EMPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(EMPH_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! EMPH_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(EMPH_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1374,16 +1374,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(STRONG_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! STRONG_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(STRONG_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! STRONG_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! STRONG_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(STRONG_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! STRONG_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(STRONG_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1398,16 +1398,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(LINK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! LINK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(LINK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! LINK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! LINK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(LINK_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! LINK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(LINK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
@@ -1422,16 +1422,16 @@ mod tests {
                 let other_pointer = cmark_node_new(i as u32);
                 let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
                 let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = Node::get_cmark_type(other_node.as_resource().pointer).unwrap();
+                let other_type = other_node.get_cmark_type().unwrap();
 
-                match doc_node.can_append_child(&other_node) {
-                    true => assert!(IMAGE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! IMAGE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be a valid block quote child, but was not", other_type)
+                match doc_node.can_append_child(&other_node).unwrap() {
+                    true => assert!(IMAGE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                    false => assert!( ! IMAGE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
                 }
 
                 match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! IMAGE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(IMAGE_CHILDREN.contains(&Node::get_cmark_type(other_pointer).unwrap()), "{:?} should not have been able to append, but was", other_type)
+                    Err(_) => assert!( ! IMAGE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                    Ok(_) => assert!(IMAGE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
                 }
             }
         }
