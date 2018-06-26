@@ -200,6 +200,11 @@ pub const DOCUMENT_CHILDREN: &[NodeType] = &[
     NodeType::CMarkNodeBlockQuote
 ];
 
+/// Valid child types of List elements
+pub const LIST_CHILDREN: &[NodeType] = &[
+    NodeType::CMarkNodeItem
+];
+
 /// Valid child types of List Item elements
 pub const ITEM_CHILDREN: &[NodeType] = DOCUMENT_CHILDREN;
 

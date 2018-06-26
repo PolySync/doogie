@@ -34,7 +34,6 @@ pub enum CMarkNodePtr {}
 enum CMarkIterPtr {}
 
 extern "C" {
-    #[cfg(test)]
     fn cmark_node_new(node_type: u32) -> *mut CMarkNodePtr;
 
     fn cmark_parse_document(buffer: *const u8, len: size_t, options: c_int) -> *mut CMarkNodePtr;
@@ -103,6 +102,20 @@ struct Resource {
     manager: Rc<ResourceManager>,
 }
 
+impl Resource {
+    /// Constructs a new `Resource` based on a libcmark Node Type
+    fn from_node_type(node_type: NodeType, manager: Rc<ResourceManager>) -> Self {
+        let pointer: *mut CMarkNodePtr;
+        unsafe {
+            pointer = cmark_node_new(node_type as u32);
+        }
+        Self {
+            pointer,
+            manager
+        }
+    }
+}
+
 /// Parses the text of a CommonMark document and returns the root node of the document tree.
 ///
 /// # Examples
@@ -153,7 +166,7 @@ pub enum Node {
     LineBreak(LineBreak),
     Code(Code),
     HtmlInline(HtmlInline),
-    CustomInline(CustomeInline),
+    CustomInline(CustomInline),
     Emph(Emph),
     Strong(Strong),
     Link(Link),
@@ -173,13 +186,11 @@ impl Debug for Node {
 }
 
 impl Node {
-    /// Construct a Rust Node wrapper around a libcmark node
-    ///
-    /// The manager parameter should be a clone of the manager all other nodes are sharing.
-    fn new(pointer: *mut CMarkNodePtr, manager: Rc<ResourceManager>) -> DoogieResult<Self> {
+    /// Construct a Rust Node wrapper around a pointer to a libcmark node
+    fn from_raw(pointer: *mut CMarkNodePtr) -> DoogieResult<Self> {
         let resource = Resource {
             pointer,
-            manager
+            manager: Rc::new(ResourceManager::new())
         };
 
         let cmark_type: NodeType;
@@ -204,7 +215,7 @@ impl Node {
             NodeType::CMarkNodeLinebreak => Ok(Node::LineBreak(LineBreak {resource})),
             NodeType::CMarkNodeCode => Ok(Node::Code(Code {resource})),
             NodeType::CMarkNodeHtmlInline => Ok(Node::HtmlInline(HtmlInline {resource})),
-            NodeType::CMarkNodeCustomInline => Ok(Node::CustomInline(CustomeInline {resource})),
+            NodeType::CMarkNodeCustomInline => Ok(Node::CustomInline(CustomInline {resource})),
             NodeType::CMarkNodeEmph => Ok(Node::Emph(Emph {resource})),
             NodeType::CMarkNodeStrong => Ok(Node::Strong(Strong {resource})),
             NodeType::CMarkNodeLink => Ok(Node::Link(Link {resource})),
@@ -212,12 +223,13 @@ impl Node {
         }
     }
 
-    /// Returns the equivalent of a libcmark NodeType enum
-    pub fn get_cmark_type(&self) -> DoogieResult<NodeType> {
+    /// Constructs a new `Node` of the given libcmark Node Type
+    pub fn from_type(node_type: NodeType) -> DoogieResult<Self> {
+        let pointer: *mut CMarkNodePtr;
         unsafe {
-            let t = cmark_node_get_type(self.as_resource().pointer);
-            Ok(NodeType::try_from(t as u32)?)
+            pointer = cmark_node_new(node_type as u32);
         }
+        Node::from_raw(pointer)
     }
 
     /// Returns the underlying resource object for this Node
@@ -246,6 +258,19 @@ impl Node {
         }
     }
 
+    /// Returns the Rust equivalent of a libcmark NodeType enum
+    pub fn get_cmark_type(&self) -> DoogieResult<NodeType> {
+        unsafe {
+            let t = cmark_node_get_type(self.as_resource().pointer);
+            Ok(NodeType::try_from(t as u32)?)
+        }
+    }
+
+    /// Returns a unique numerical identity for the `Node`
+    pub fn get_id(&self) -> u32 {
+        self.as_resource().pointer as u32
+    }
+
     /// Returns a string version of the Node type
     pub fn get_cmark_type_string(&self) -> DoogieResult<String> {
         unsafe {
@@ -259,7 +284,7 @@ impl Node {
         }
     }
 
-    /// Returns the next sequential sibling of the current Node if it exists
+    /// Returns the next sequential sibling of the current `Node` if it exists
     pub fn next_sibling(&self) -> DoogieResult<Option<Node>> {
         unsafe {
             let next_node_ptr = cmark_node_next(self.as_resource().pointer);
@@ -267,12 +292,12 @@ impl Node {
             if next_node_ptr.is_null() {
                 Ok(None)
             } else {
-                Ok(Some(Node::new(next_node_ptr, self.as_resource().manager.clone())?))
+                Ok(Some(Node::from_raw(next_node_ptr)?))
             }
         }
     }
 
-    /// Returns the previous sequential sibling of the current Node if it exists
+    /// Returns the previous sequential sibling of the current `Node` if it exists
     pub fn prev_sibling(&self) -> DoogieResult<Option<Node>> {
         unsafe {
             let prev_node_ptr = cmark_node_previous(self.as_resource().pointer);
@@ -280,12 +305,12 @@ impl Node {
             if prev_node_ptr.is_null() {
                 Ok(None)
             } else {
-                Ok(Some(Node::new(prev_node_ptr, self.as_resource().manager.clone())?))
+                Ok(Some(Node::from_raw(prev_node_ptr)?))
             }
         }
     }
 
-    /// Returns the parent Node of the current Node if it exists
+    /// Returns the parent Node of the current `Node` if it exists
     pub fn parent(&self) -> DoogieResult<Option<Node>> {
         unsafe {
             let parent_node_ptr = cmark_node_parent(self.as_resource().pointer);
@@ -293,12 +318,12 @@ impl Node {
             if parent_node_ptr.is_null() {
                 Ok(None)
             } else {
-                Ok(Some(Node::new(parent_node_ptr, self.as_resource().manager.clone())?))
+                Ok(Some(Node::from_raw(parent_node_ptr)?))
             }
         }
     }
 
-    /// Returns the first child Node of the current Node if it exists
+    /// Returns the first child Node of the current `Node` if it exists
     pub fn first_child(&self) -> DoogieResult<Option<Node>> {
         unsafe {
             let child_ptr = cmark_node_first_child(self.as_resource().pointer);
@@ -306,12 +331,12 @@ impl Node {
             if child_ptr.is_null() {
                 Ok(None)
             } else {
-                Ok(Some(Node::new(child_ptr, self.as_resource().manager.clone())?))
+                Ok(Some(Node::from_raw(child_ptr)?))
             }
         }
     }
 
-    /// Returns the last child Node of the current Node if it exists
+    /// Returns the last child Node of the current `Node` if it exists
     pub fn last_child(&self) -> DoogieResult<Option<Node>> {
         unsafe {
             let child_ptr = cmark_node_last_child(self.as_resource().pointer);
@@ -319,20 +344,20 @@ impl Node {
             if child_ptr.is_null() {
                 Ok(None)
             } else {
-                Ok(Some(Node::new(child_ptr, self.as_resource().manager.clone())?))
+                Ok(Some(Node::from_raw(child_ptr)?))
             }
         }
     }
 
-    /// Returns a new instance of the current Node
+    /// Returns a new instance of the current `Node`
     ///
-    /// The returned Node will share the underlying memory resource and manager of the current Node.
+    /// The returned `Node` will share the underlying memory resource and manager of the current Node.
     pub fn itself(&self) -> DoogieResult<Node> {
-        Ok(Node::new(self.as_resource().pointer, self.as_resource().manager.clone())?)
+        Ok(Node::from_raw(self.as_resource().pointer)?)
     }
 
 
-    /// Unlink the current Node from its position in the document AST
+    /// Unlinks the current `Node` from its position in the document AST
     ///
     /// After unlinking, the Node will have no parent or siblings, but will retain all of its
     /// children.
@@ -343,7 +368,7 @@ impl Node {
         self.as_resource().manager.track_root(&self.as_resource().pointer);
     }
 
-    /// Append the given Node as the last child of the current Node if possible
+    /// Append the given `Node` as the last child of the current `Node` if possible
     ///
     /// The rules of the CommonMark AST must be respected when appending nodes. Not all Nodes can
     /// be appended to each particular type of Node. Use `can_append_child` to determine if the
@@ -362,7 +387,7 @@ impl Node {
         }
     }
 
-    /// Determines if the given Node is a potentially valid child of the current Node
+    /// Determines if the given `Node` is a potentially valid child of the current `Node`
     pub fn can_append_child(&self, child: &Node) -> DoogieResult<bool> {
         let child_type = child.get_cmark_type()?;
 
@@ -392,7 +417,7 @@ impl Node {
         Ok(result)
     }
 
-    /// Renders the document AST rooted at the current Node into textual CommonMark form
+    /// Renders the document AST rooted at the current `Node` into textual CommonMark form
     pub fn render_commonmark(&self) -> String {
         unsafe {
             CStr::from_ptr(cmark_render_commonmark(self.as_resource().pointer, 0))
@@ -401,7 +426,7 @@ impl Node {
         }
     }
 
-    /// Renders the document AST rooted at the current Node into textual xml form
+    /// Renders the document AST rooted at the current `Node` into textual xml form
     pub fn render_xml(&self) -> String {
         unsafe {
             CStr::from_ptr(cmark_render_xml(self.as_resource().pointer, 0))
@@ -411,32 +436,37 @@ impl Node {
     }
 
 
-    /// Returns an iterator over the Nodes of the document subtree rooted at the current node
+    /// Returns an iterator over the `Node`s of the document subtree rooted at the current `Node`
     pub fn iter(&self) -> NodeIterator {
         let resource = self.as_resource();
-        NodeIterator::new(
-            resource.pointer,
-            resource.manager.clone())
+        NodeIterator::new(resource.pointer)
     }
 
-    /// Returns the start line from the original CMark document corresponding to the current Node.
+    /// Returns the start line from the original CMark document corresponding to the current `Node`
     pub fn get_start_line(&self) -> u32 {
         unsafe { cmark_node_get_start_line(self.as_resource().pointer) as u32 }
     }
 
-    /// Returns the start column from the original CMark document corresponding to this Node.
+    /// Returns the start column from the original CMark document corresponding to this `Node
     pub fn get_start_column(&self) -> u32 {
         unsafe { cmark_node_get_start_column(self.as_resource().pointer) as u32 }
     }
 }
 
-/// Represents the root Node of a document in the CommonMark AST
+/// Represents the root `Node` of a document in the CommonMark AST
 pub struct Document {
     resource: Resource,
 }
 
 impl Document {
-    /// Consolidates all adjacent Text Nodes in the document into single Text Nodes.
+    /// Constructs a new `Document`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeDocument, Rc::new(ResourceManager::new()))
+        }
+    }
+
+    /// Consolidates all adjacent `Text` `Node`s in the document into single `Text` `Node`s.
     pub fn consolidate_text_nodes(&self) {
         unsafe {
             cmark_consolidate_text_nodes(self.resource.pointer);
@@ -449,6 +479,15 @@ pub struct BlockQuote {
     resource: Resource
 }
 
+impl BlockQuote {
+    /// Constructs a new `BlockQuote`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeBlockQuote, Rc::new(ResourceManager::new()))
+        }
+    }
+}
+
 /// Represents a List element in CommonMark
 ///
 /// Lists are meta-containers in that they are classified as container blocks in CommonMark, but can
@@ -458,6 +497,13 @@ pub struct List {
 }
 
 impl List {
+    /// Constructs a new `List`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeList, Rc::new(ResourceManager::new()))
+        }
+    }
+
     /// Returns an enum representing the type of list i.e. Bullet or Ordered
     pub fn get_list_type(&self) -> DoogieResult<ListType> {
         unsafe { ListType::try_from(cmark_node_get_list_type(self.resource.pointer) as u32) }
@@ -474,12 +520,28 @@ pub struct Item {
     resource: Resource
 }
 
+impl Item {
+    /// Constructs a new `Item`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeItem, Rc::new(ResourceManager::new())),
+        }
+    }
+}
+
 /// Represents a Code Block in CommonMark
 pub struct CodeBlock {
     resource: Resource
 }
 
 impl CodeBlock {
+    /// Constructs a new `CodeBlock`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeCodeBlock, Rc::new(ResourceManager::new())),
+        }
+    }
+
     /// Returns the info text in the case of a Fenced Code Block
     pub fn get_fence_info(&self) -> DoogieResult<String> {
         unsafe {
@@ -532,14 +594,41 @@ pub struct HtmlBlock {
     resource: Resource
 }
 
+impl HtmlBlock {
+    /// Constructs a new `HtmlBlock`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeHtmlBlock, Rc::new(ResourceManager::new())),
+        }
+    }
+}
+
 /// Represents an ambiguous Block Element
 pub struct CustomBlock {
     resource: Resource
 }
 
+impl CustomBlock {
+    /// Constructs a new `CustomBlock`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeCustomBlock, Rc::new(ResourceManager::new())),
+        }
+    }
+}
+
 /// Represents a Paragraph element in CommonMark
 pub struct Paragraph {
     resource: Resource
+}
+
+impl Paragraph {
+    /// Constructs a new `Paragraph`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeParagraph, Rc::new(ResourceManager::new())),
+        }
+    }
 }
 
 /// Represents a Heading element in CommonMark
@@ -548,6 +637,13 @@ pub struct Heading {
 }
 
 impl Heading {
+    /// Constructs a new `Heading`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeHeading, Rc::new(ResourceManager::new())),
+        }
+    }
+
     /// Returns the heading level of the current Heading
     pub fn get_level(&self) -> usize {
         unsafe { cmark_node_get_heading_level(self.resource.pointer) as usize }
@@ -559,12 +655,28 @@ pub struct ThematicBreak {
     resource: Resource
 }
 
+impl ThematicBreak {
+    /// Constructs a new `ThematicBreak`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeThematicBreak, Rc::new(ResourceManager::new())),
+        }
+    }
+}
+
 /// Represents a Text element in CommonMark
 pub struct Text {
     resource: Resource
 }
 
 impl Text {
+    /// Constructs a new `Text`
+    pub fn new() -> Self {
+        Text {
+            resource: Resource::from_node_type(NodeType::CMarkNodeText, Rc::new(ResourceManager::new())),
+        }
+    }
+
     /// Returns the textual content of the current Text element
     pub fn get_content(&self) -> DoogieResult<String> {
         unsafe {
@@ -595,9 +707,27 @@ pub struct SoftBreak {
     resource: Resource
 }
 
+impl SoftBreak {
+    /// Constructs a new `SoftBreak`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeSoftbreak, Rc::new(ResourceManager::new())),
+        }
+    }
+}
+
 /// Represents a Line Break element in CommonMark
 pub struct LineBreak {
     resource: Resource
+}
+
+impl LineBreak {
+    /// Constructs a new `LineBreak`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeLinebreak, Rc::new(ResourceManager::new())),
+        }
+    }
 }
 
 /// Represents an inlin Code element in CommonMark
@@ -605,14 +735,65 @@ pub struct Code {
     resource: Resource
 }
 
+impl Code {
+    /// Constructs a new `Code`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeCode, Rc::new(ResourceManager::new())),
+        }
+    }
+
+    /// Returns the textual content of the current Text element
+    pub fn get_content(&self) -> DoogieResult<String> {
+        unsafe {
+            let result = cmark_node_get_literal(self.resource.pointer);
+            if result.is_null() {
+                return Ok(String::new());
+            } else {
+                return Ok(CStr::from_ptr(result).to_str()?.to_string());
+            }
+        }
+    }
+
+    /// Sets the textual content of the current Text element
+    pub fn set_content(&self, content: &String) -> DoogieResult<u32> {
+        unsafe {
+            let content = CString::new(content.as_bytes())?;
+
+            match cmark_node_set_literal(self.resource.pointer, content.as_ptr()) {
+                1 => Ok(1 as u32),
+                i => Err(DoogieError::ReturnCode(i as u32)),
+            }
+        }
+    }
+}
+
 /// Represents an inline HTML element in CommonMark
 pub struct HtmlInline {
     resource: Resource
 }
 
+impl HtmlInline {
+    /// Constructs a new `HtmlInline`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeHtmlInline, Rc::new(ResourceManager::new())),
+        }
+    }
+}
+
 /// Represents an ambiguous inline element
-pub struct CustomeInline {
+pub struct CustomInline {
     resource: Resource
+}
+
+impl CustomInline {
+    /// Constructs a new `CustomInline`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeCustomInline, Rc::new(ResourceManager::new())),
+        }
+    }
 }
 
 /// Represenets an Emph element in CommonMark
@@ -620,9 +801,27 @@ pub struct Emph {
     resource: Resource
 }
 
+impl Emph {
+    /// Constructs a new `Emph`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeEmph, Rc::new(ResourceManager::new())),
+        }
+    }
+}
+
 /// Represents a Strong element in CommonMark
 pub struct Strong {
     resource: Resource
+}
+
+impl Strong {
+    /// Constructs a new `Strong`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeStrong, Rc::new(ResourceManager::new())),
+        }
+    }
 }
 
 /// Represents a Link element in CommonMark
@@ -631,6 +830,13 @@ pub struct Link {
 }
 
 impl Link {
+    /// Constructs a new `Link`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeLink, Rc::new(ResourceManager::new())),
+        }
+    }
+
     /// Returns the URL portion of the Link
     pub fn get_url(&self) -> DoogieResult<String> {
         unsafe {
@@ -656,6 +862,14 @@ pub struct Image {
     resource: Resource
 }
 
+impl Image {
+    /// Constructs a new `Image`
+    pub fn new() -> Self {
+        Self {
+            resource: Resource::from_node_type(NodeType::CMarkNodeImage, Rc::new(ResourceManager::new())),
+        }
+    }
+}
 
 /// Iterator over the subtree rooted in the current node.
 ///
@@ -664,17 +878,14 @@ pub struct Image {
 pub struct NodeIterator {
     /// Raw CMark iterator pointer.
     pointer: *mut CMarkIterPtr,
-    /// ResourceManager that will manage the resources of any returned Nodes.
-    manager: Rc<ResourceManager>,
 }
 
 impl NodeIterator {
     /// Construct a new instance.
-    fn new(node_ptr: *mut CMarkNodePtr, manager: Rc<ResourceManager>) -> NodeIterator {
+    fn new(node_ptr: *mut CMarkNodePtr) -> NodeIterator {
         unsafe {
             NodeIterator {
                 pointer: cmark_iter_new(node_ptr),
-                manager,
             }
         }
     }
@@ -690,7 +901,7 @@ impl Iterator for NodeIterator {
                 Ok(IterEventType::Done) | Ok(IterEventType::None) => None,
                 Ok(event) => {
                     let node_p = cmark_iter_get_node(self.pointer);
-                    match Node::new(node_p, self.manager.clone()) {
+                    match Node::from_raw(node_p) {
                         Ok(node) => Some((node, event)),
                         Err(_) => {
                             error!("Could not instantiate Node from Iterator.");
@@ -713,12 +924,7 @@ impl Drop for NodeIterator {
     }
 }
 
-/// Manages the memory resources of Node instances.
-///
-/// There should be one instance of ResourceManager shared between all Nodes parsed from the same
-/// document. Ensures that the memory for all Nodes in the AST as well as any disconnected subtrees
-/// that may arise due to unlinking are properly freed when the last Node instance goes out of
-/// scope.
+/// Manages the memory resources of `Node` instances.
 #[derive(Debug)]
 struct ResourceManager {
     roots: RefCell<Vec<*mut CMarkNodePtr>>
@@ -770,16 +976,19 @@ mod tests {
     use super::{
         parse_document,
         Node,
+        CodeBlock,
+        Text,
         Resource,
         IterEventType,
         NodeType,
-        ResourceManager,
         cmark_node_new,
+        CMarkNodePtr
     };
     use proptest::prelude::*;
-    use std::rc::Rc;
     use constants::*;
+    use try_from::TryFrom;
 
+    /// Returns some arbitrary alphanumeric textual content
     fn arb_content(max_words: usize) -> BoxedStrategy<String> {
         prop::collection::vec("[[:alnum:]]{1,45}", 1..max_words)
             .prop_map(|v| v.join(" "))
@@ -883,16 +1092,17 @@ mod tests {
     }
 
     #[test]
-    fn node_type() {
+    fn test_from_raw() {
+        let node_pointer: *mut CMarkNodePtr;
         unsafe {
-            let node_pointer = cmark_node_new(NodeType::CMarkNodeParagraph as u32);
-            let manager = Rc::new(ResourceManager::new());
-            let node = Node::new(node_pointer, manager).unwrap();
+            node_pointer = cmark_node_new(NodeType::CMarkNodeParagraph as u32);
+        }
 
-            match node {
-                Node::Paragraph(_) => (),
-                _ => panic!("Node should have been a paragraph")
-            }
+        let node = Node::from_raw(node_pointer).unwrap();
+
+        match node {
+            Node::Paragraph(_) => (),
+            _ => panic!("Node should have been a paragraph")
         }
     }
 
@@ -900,15 +1110,14 @@ mod tests {
     fn test_unlink() {
         let body = "* Item 1\n* Item 2\n* Item 3";
         let root = parse_document(body);
-        let manager = root.as_resource().manager.clone();
         let first_item = root
             .first_child()
             .unwrap().expect("Root should have first child")
             .first_child()
             .unwrap().expect("List should have first item");
+        let manager = first_item.as_resource().manager;
 
         first_item.unlink();
-
 
         assert!(manager.roots.borrow().contains(&first_item.as_resource().pointer));
         for (node, _) in root.iter() {
@@ -919,43 +1128,30 @@ mod tests {
     }
 
     #[test]
-    fn test_append_child_untracks_root() {
-        unsafe{
-            let root_pointer = cmark_node_new(NodeType::CMarkNodeDocument as u32);
-            let child_pointer = cmark_node_new(NodeType::CMarkNodeParagraph as u32);
-            let manager = Rc::new(ResourceManager::new());
-            manager.track_root(&root_pointer);
-            manager.track_root(&child_pointer);
-            let root_node = Node::new(root_pointer, manager.clone()).unwrap();
-            let child_node = Node::new(child_pointer, manager.clone()).unwrap();
+    fn test_append_child() {
+        let root_node = Node::from_type(NodeType::CMarkNodeDocument).unwrap();
+        let child_node = Node::from_type(NodeType::CMarkNodeParagraph).unwrap();
 
-            root_node.append_child(&child_node).unwrap();
+        root_node.append_child(&child_node).unwrap();
 
-            assert!( ! manager.is_tracking(&child_pointer));
-            assert_eq!(root_node.first_child().unwrap().expect("Root should have child"), child_node);
-        }
+        assert!( ! root_node.as_resource().manager.is_tracking(&child_node.as_resource().pointer));
+        assert_eq!(root_node.first_child().unwrap().expect("Root should have child"), child_node);
     }
 
     #[test]
     fn test_document_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeDocument as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(DOCUMENT_CHILDREN.contains(&other_type), "{:?} should not have been a valid document child, but was", other_type),
-                    false => assert!( ! DOCUMENT_CHILDREN.contains(&other_type), "{:?} should be a valid document child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! DOCUMENT_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(DOCUMENT_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeDocument;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(DOCUMENT_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! DOCUMENT_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! DOCUMENT_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(DOCUMENT_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -963,23 +1159,17 @@ mod tests {
     #[test]
     fn test_block_quote_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeBlockQuote as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeBlockQuote;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(BLOCK_QUOTE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -987,42 +1177,17 @@ mod tests {
     #[test]
     fn test_list_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeList as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert_eq!(
-                        NodeType::CMarkNodeItem,
-                        other_type,
-                        "{:?} should not have been a valid child, but was",
-                        other_type
-                    ),
-                    false => assert_ne!(
-                        NodeType::CMarkNodeItem,
-                        other_type,
-                        "{:?} should be a valid block quote child, but was not",
-                        other_type
-                    )
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Ok(_) => assert_eq!(
-                        NodeType::CMarkNodeItem,
-                        other_type,
-                        "{:?} should not have been able to append, but was",
-                        other_type
-                    ),
-                    Err(_) => assert_ne!(
-                        NodeType::CMarkNodeItem,
-                        other_type,
-                        "{:?} should be able to append, but was not",
-                        other_type),
-                }
+            let node_type = NodeType::CMarkNodeList;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(LIST_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! LIST_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! LIST_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(LIST_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1030,23 +1195,17 @@ mod tests {
     #[test]
     fn test_item_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeItem as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(ITEM_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! ITEM_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! ITEM_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(ITEM_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeItem;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(ITEM_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! ITEM_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! ITEM_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(ITEM_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1054,23 +1213,17 @@ mod tests {
     #[test]
     fn test_code_block_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeCodeBlock as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeCodeBlock;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(CODE_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1078,23 +1231,17 @@ mod tests {
     #[test]
     fn test_html_block_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeHtmlBlock as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeHtmlBlock;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(HTML_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1102,23 +1249,17 @@ mod tests {
     #[test]
     fn test_custom_block_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeCustomBlock as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeCustomBlock;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(CUSTOM_BLOCK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1126,23 +1267,17 @@ mod tests {
     #[test]
     fn test_paragraph_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeParagraph as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeParagraph;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(PARAGRAPH_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1150,23 +1285,17 @@ mod tests {
     #[test]
     fn test_heading_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeHeading as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(HEADING_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! HEADING_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! HEADING_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(HEADING_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeHeading;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(HEADING_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! HEADING_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! HEADING_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(HEADING_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1175,23 +1304,17 @@ mod tests {
     #[test]
     fn test_thematic_break_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeThematicBreak as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeThematicBreak;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(THEMATIC_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1199,23 +1322,17 @@ mod tests {
     #[test]
     fn test_text_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeText as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(TEXT_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! TEXT_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! TEXT_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(TEXT_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeText;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(TEXT_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! TEXT_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! TEXT_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(TEXT_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1223,23 +1340,17 @@ mod tests {
     #[test]
     fn test_soft_break_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeSoftbreak as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeSoftbreak;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(SOFT_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1247,23 +1358,17 @@ mod tests {
     #[test]
     fn test_line_break_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeLinebreak as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeLinebreak;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(LINE_BREAK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1271,23 +1376,17 @@ mod tests {
     #[test]
     fn test_code_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeCode as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(CODE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CODE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CODE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CODE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeCode;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(CODE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! CODE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! CODE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(CODE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1295,23 +1394,17 @@ mod tests {
     #[test]
     fn test_inline_html_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeHtmlInline as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeHtmlInline;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(INLINE_HTML_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1320,23 +1413,17 @@ mod tests {
     #[test]
     fn test_custom_inline_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeCustomInline as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeCustomInline;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(CUSTOM_INLINE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1344,23 +1431,17 @@ mod tests {
     #[test]
     fn test_emph_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeEmph as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(EMPH_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! EMPH_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! EMPH_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(EMPH_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeEmph;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(EMPH_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! EMPH_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! EMPH_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(EMPH_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1368,23 +1449,17 @@ mod tests {
     #[test]
     fn test_strong_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeStrong as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(STRONG_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! STRONG_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! STRONG_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(STRONG_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeStrong;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(STRONG_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! STRONG_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! STRONG_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(STRONG_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1392,23 +1467,17 @@ mod tests {
     #[test]
     fn test_link_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeLink as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(LINK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! LINK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! LINK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(LINK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeLink;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(LINK_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! LINK_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! LINK_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(LINK_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
@@ -1416,62 +1485,36 @@ mod tests {
     #[test]
     fn test_image_children() {
         for i in 1..21 {
-            unsafe {
-                let manager = Rc::new(ResourceManager::new());
-                let doc_pointer = cmark_node_new(NodeType::CMarkNodeImage as u32);
-                let other_pointer = cmark_node_new(i as u32);
-                let doc_node = Node::new(doc_pointer, manager.clone()).unwrap();
-                let other_node = Node::new(other_pointer, manager.clone()).unwrap();
-                let other_type = other_node.get_cmark_type().unwrap();
-
-                match doc_node.can_append_child(&other_node).unwrap() {
-                    true => assert!(IMAGE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
-                    false => assert!( ! IMAGE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
-                }
-
-                match doc_node.append_child(&other_node) {
-                    Err(_) => assert!( ! IMAGE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
-                    Ok(_) => assert!(IMAGE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
-                }
+            let node_type = NodeType::CMarkNodeImage;
+            let other_type = NodeType::try_from(i).unwrap();
+            let node = Node::from_type(node_type).unwrap();
+            let child = Node::from_type(other_type.clone()).unwrap();
+            match node.can_append_child(&child).unwrap() {
+                true => assert!(IMAGE_CHILDREN.contains(&other_type), "{:?} should not have been a valid block quote child, but was", other_type),
+                false => assert!( ! IMAGE_CHILDREN.contains(&other_type), "{:?} should be a valid block quote child, but was not", other_type)
+            }
+            match node.append_child(&child) {
+                Err(_) => assert!( ! IMAGE_CHILDREN.contains(&other_type), "{:?} should be able to append, but was not", other_type),
+                Ok(_) => assert!(IMAGE_CHILDREN.contains(&other_type), "{:?} should not have been able to append, but was", other_type)
             }
         }
     }
 
     proptest! {
         #[test]
-        fn set_and_get_content(ref content in arb_content(10)) {
-            unsafe {
-                let node_pointer = cmark_node_new(NodeType::CMarkNodeText as u32);
-                let manager = Rc::new(ResourceManager::new());
-                let node = Node::new(node_pointer, manager).unwrap();
-
-                match node {
-                    Node::Text(text_node) => {
-                        text_node.set_content(content).unwrap();
-                        assert_eq!(content, &text_node.get_content().unwrap());
-                    },
-                    _ => panic!("Not a text node")
-                }
-            }
+        fn test_text_set_and_get_content(ref content in arb_content(10)) {
+                let text_node = Text::new();
+                text_node.set_content(content).unwrap();
+                assert_eq!(content, &text_node.get_content().unwrap());
         }
     }
 
     proptest! {
         #[test]
         fn test_fence_info_get_set(ref content in arb_content(10)){
-            unsafe {
-                let node_pointer = cmark_node_new(NodeType::CMarkNodeCodeBlock as u32);
-                let manager = Rc::new(ResourceManager::new());
-                let node = Node::new(node_pointer, manager).unwrap();
-
-                match node {
-                    Node::CodeBlock(node) => {
-                        node.set_fence_info(content).unwrap();
-                        assert_eq!(content, &node.get_fence_info().unwrap());
-                    },
-                    _ => panic!("Not a code block node")
-                }
-            }
+            let node = CodeBlock::new();
+            node.set_fence_info(content).unwrap();
+            assert_eq!(content, &node.get_fence_info().unwrap());
         }
     }
 }
