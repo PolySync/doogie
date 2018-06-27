@@ -264,30 +264,31 @@ impl Node {
         unsafe {
             cmark_type = NodeType::try_from(cmark_node_get_type(pointer) as u32)?;
         }
+        let result = match cmark_type {
+            NodeType::CMarkNodeNone => return Err(DoogieError::NodeNone),
+            NodeType::CMarkNodeDocument => Node::Document(Document {resource}),
+            NodeType::CMarkNodeList => Node::List(List {resource}),
+            NodeType::CMarkNodeBlockQuote => Node::BlockQuote(BlockQuote {resource}),
+            NodeType::CMarkNodeText => Node::Text(Text {resource}),
+            NodeType::CMarkNodeParagraph => Node::Paragraph(Paragraph {resource}),
+            NodeType::CMarkNodeItem => Node::Item(Item {resource}),
+            NodeType::CMarkNodeCodeBlock => Node::CodeBlock(CodeBlock {resource}),
+            NodeType::CMarkNodeHtmlBlock => Node::HtmlBlock(HtmlBlock {resource}),
+            NodeType::CMarkNodeCustomBlock => Node::CustomBlock(CustomBlock {resource}),
+            NodeType::CMarkNodeHeading => Node::Heading(Heading {resource}),
+            NodeType::CMarkNodeThematicBreak => Node::ThematicBreak(ThematicBreak {resource}),
+            NodeType::CMarkNodeSoftbreak => Node::SoftBreak(SoftBreak {resource}),
+            NodeType::CMarkNodeLinebreak => Node::LineBreak(LineBreak {resource}),
+            NodeType::CMarkNodeCode => Node::Code(Code {resource}),
+            NodeType::CMarkNodeHtmlInline => Node::HtmlInline(HtmlInline {resource}),
+            NodeType::CMarkNodeCustomInline => Node::CustomInline(CustomInline {resource}),
+            NodeType::CMarkNodeEmph => Node::Emph(Emph {resource}),
+            NodeType::CMarkNodeStrong => Node::Strong(Strong {resource}),
+            NodeType::CMarkNodeLink => Node::Link(Link {resource}),
+            NodeType::CMarkNodeImage => Node::Image(Image {resource}),
+        };
 
-        match cmark_type {
-            NodeType::CMarkNodeNone => Err(DoogieError::NodeNone),
-            NodeType::CMarkNodeDocument => Ok(Node::Document(Document {resource})),
-            NodeType::CMarkNodeList => Ok(Node::List(List {resource})),
-            NodeType::CMarkNodeBlockQuote => Ok(Node::BlockQuote(BlockQuote {resource})),
-            NodeType::CMarkNodeText => Ok(Node::Text(Text {resource})),
-            NodeType::CMarkNodeParagraph => Ok(Node::Paragraph(Paragraph {resource})),
-            NodeType::CMarkNodeItem => Ok(Node::Item(Item {resource})),
-            NodeType::CMarkNodeCodeBlock => Ok(Node::CodeBlock(CodeBlock {resource})),
-            NodeType::CMarkNodeHtmlBlock => Ok(Node::HtmlBlock(HtmlBlock {resource})),
-            NodeType::CMarkNodeCustomBlock => Ok(Node::CustomBlock(CustomBlock {resource})),
-            NodeType::CMarkNodeHeading => Ok(Node::Heading(Heading {resource})),
-            NodeType::CMarkNodeThematicBreak => Ok(Node::ThematicBreak(ThematicBreak {resource})),
-            NodeType::CMarkNodeSoftbreak => Ok(Node::SoftBreak(SoftBreak {resource})),
-            NodeType::CMarkNodeLinebreak => Ok(Node::LineBreak(LineBreak {resource})),
-            NodeType::CMarkNodeCode => Ok(Node::Code(Code {resource})),
-            NodeType::CMarkNodeHtmlInline => Ok(Node::HtmlInline(HtmlInline {resource})),
-            NodeType::CMarkNodeCustomInline => Ok(Node::CustomInline(CustomInline {resource})),
-            NodeType::CMarkNodeEmph => Ok(Node::Emph(Emph {resource})),
-            NodeType::CMarkNodeStrong => Ok(Node::Strong(Strong {resource})),
-            NodeType::CMarkNodeLink => Ok(Node::Link(Link {resource})),
-            NodeType::CMarkNodeImage => Ok(Node::Image(Image {resource})),
-        }
+        Ok(result)
     }
 
     /// Constructs a new `Node` of the given libcmark Node Type
