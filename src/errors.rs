@@ -26,7 +26,7 @@ impl fmt::Display for DoogieError {
             DoogieError::ReturnCode(code) => write!(f, "CMark return code: {}", code),
             DoogieError::BadEnum(num) => write!(f, "Bad Enum Value: {}", num),
             DoogieError::ResourceUnavailable => write!(f, "The resource is no longer available"),
-            DoogieError::NodeNone => write!(f, "CMark Error"),
+            DoogieError::NodeNone => write!(f, "CMark has erroneously returned null for this operation"),
             DoogieError::FmtError(ref err) => write!(f, "FmtError: {}", err)
         }
     }
