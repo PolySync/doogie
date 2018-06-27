@@ -96,7 +96,11 @@ extern "C" {
     fn cmark_iter_free(iter: *mut CMarkIterPtr) -> c_void;
 }
 
-/// Contains the memory resource and management for a Node
+/// Encapsulation of the libcmark pointer for a `Node`
+///
+/// This struct holds the libcmark pointer for the CommonMark AST node that is wrapped by `Node`
+/// as well as a reference to the `ResourceManager` that is responsible for freeing the underlying
+/// memory when appropriate.
 #[derive(Clone)]
 struct Resource {
     pub pointer: *mut CMarkNodePtr,
