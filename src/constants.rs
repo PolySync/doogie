@@ -40,7 +40,7 @@ impl TryFrom<u32> for IterEventType {
     }
 }
 
-/// Each Node in the libcmark document AST possesses a type attribute that corresponds to it's
+/// Each Node in the libcmark document AST possesses a type attribute that corresponds to its
 /// equivalent CommonMark semantic element.
 #[derive(PartialEq, Debug, Clone)]
 pub enum NodeType {
