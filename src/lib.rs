@@ -155,6 +155,15 @@ pub fn parse_document(buffer: &str) -> Node {
     })
 }
 
+/// Exposes the internal pointer and memory management of a `Node`
+trait NodeResource {
+    /// Returns the libcmark node pointer
+    fn pointer(&self) -> *mut CMarkNodePtr;
+
+    /// Returns the `ResourceManager` that is managing the memory for the libcmark node pointer
+    fn manager(&self) -> Rc<ResourceManager>;
+}
+
 /// A node in the AST of a parsed commonmark document
 pub enum Node {
     Document(Document),
@@ -179,15 +188,67 @@ pub enum Node {
     Image(Image)
 }
 
+impl NodeResource for Node {
+    fn pointer(&self) -> *mut CMarkNodePtr {
+        match self {
+            Node::Document(data) => data.resource.pointer,
+            Node::BlockQuote(data) => data.resource.pointer,
+            Node::List(data) => data.resource.pointer,
+            Node::Item(data) => data.resource.pointer,
+            Node::CodeBlock(data) => data.resource.pointer,
+            Node::HtmlBlock(data) => data.resource.pointer,
+            Node::CustomBlock(data) => data.resource.pointer,
+            Node::Paragraph(data) => data.resource.pointer,
+            Node::Heading(data) => data.resource.pointer,
+            Node::ThematicBreak(data) => data.resource.pointer,
+            Node::Text(data) => data.resource.pointer,
+            Node::SoftBreak(data) => data.resource.pointer,
+            Node::LineBreak(data) => data.resource.pointer,
+            Node::Code(data) => data.resource.pointer,
+            Node::HtmlInline(data) => data.resource.pointer,
+            Node::CustomInline(data) => data.resource.pointer,
+            Node::Emph(data) => data.resource.pointer,
+            Node::Strong(data) => data.resource.pointer,
+            Node::Link(data) => data.resource.pointer,
+            Node::Image(data) => data.resource.pointer,
+        }
+    }
+
+    fn manager(&self) -> Rc<ResourceManager> {
+        match self {
+            Node::Document(data) => data.resource.manager.clone(),
+            Node::BlockQuote(data) => data.resource.manager.clone(),
+            Node::List(data) => data.resource.manager.clone(),
+            Node::Item(data) => data.resource.manager.clone(),
+            Node::CodeBlock(data) => data.resource.manager.clone(),
+            Node::HtmlBlock(data) => data.resource.manager.clone(),
+            Node::CustomBlock(data) => data.resource.manager.clone(),
+            Node::Paragraph(data) => data.resource.manager.clone(),
+            Node::Heading(data) => data.resource.manager.clone(),
+            Node::ThematicBreak(data) => data.resource.manager.clone(),
+            Node::Text(data) => data.resource.manager.clone(),
+            Node::SoftBreak(data) => data.resource.manager.clone(),
+            Node::LineBreak(data) => data.resource.manager.clone(),
+            Node::Code(data) => data.resource.manager.clone(),
+            Node::HtmlInline(data) => data.resource.manager.clone(),
+            Node::CustomInline(data) => data.resource.manager.clone(),
+            Node::Emph(data) => data.resource.manager.clone(),
+            Node::Strong(data) => data.resource.manager.clone(),
+            Node::Link(data) => data.resource.manager.clone(),
+            Node::Image(data) => data.resource.manager.clone(),
+        }
+    }
+}
+
 impl PartialEq for Node {
     fn eq(&self, other: &Node) -> bool {
-        self.as_resource().pointer == other.as_resource().pointer
+        self.pointer() == other.pointer()
     }
 }
 
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{} id: {:?}", self.get_cmark_type_string().unwrap_or("Type Unavailable".to_string()), self.as_resource().pointer)
+        write!(f, "{} id: {:?}", self.get_cmark_type_string().unwrap_or("Type Unavailable".to_string()), self.pointer())
     }
 }
 
@@ -238,51 +299,25 @@ impl Node {
         Node::from_raw(pointer)
     }
 
-    /// Returns the underlying resource object for this Node
-    fn as_resource(&self) -> Resource {
-        match self {
-            &Node::Document(ref node) => node.resource.clone(),
-            &Node::BlockQuote(ref node) => node.resource.clone(),
-            &Node::Text(ref node) => node.resource.clone(),
-            &Node::List(ref node) => node.resource.clone(),
-            &Node::Item(ref node) => node.resource.clone(),
-            &Node::CodeBlock(ref node) => node.resource.clone(),
-            &Node::HtmlBlock(ref node) => node.resource.clone(),
-            &Node::CustomBlock(ref node) => node.resource.clone(),
-            &Node::Paragraph(ref node) => node.resource.clone(),
-            &Node::Heading(ref node) => node.resource.clone(),
-            &Node::ThematicBreak(ref node) => node.resource.clone(),
-            &Node::SoftBreak(ref node) => node.resource.clone(),
-            &Node::LineBreak(ref node) => node.resource.clone(),
-            &Node::Code(ref node) => node.resource.clone(),
-            &Node::HtmlInline(ref node) => node.resource.clone(),
-            &Node::CustomInline(ref node) => node.resource.clone(),
-            &Node::Emph(ref node) => node.resource.clone(),
-            &Node::Strong(ref node) => node.resource.clone(),
-            &Node::Link(ref node) => node.resource.clone(),
-            &Node::Image(ref node) => node.resource.clone(),
-        }
-    }
-
     /// Returns the Rust equivalent of a libcmark NodeType enum
     pub fn get_cmark_type(&self) -> DoogieResult<NodeType> {
         let t: i32;
         unsafe {
-            t = cmark_node_get_type(self.as_resource().pointer);
+            t = cmark_node_get_type(self.pointer());
         }
         Ok(NodeType::try_from(t as u32)?)
     }
 
     /// Returns a unique numerical identity for the `Node`
     pub fn get_id(&self) -> u32 {
-        self.as_resource().pointer as u32
+        self.pointer() as u32
     }
 
     /// Returns a string version of the Node type
     pub fn get_cmark_type_string(&self) -> DoogieResult<String> {
         let result;
         unsafe {
-            result = cmark_node_get_type_string(self.as_resource().pointer);
+            result = cmark_node_get_type_string(self.pointer());
         }
 
         if result.is_null() {
@@ -299,7 +334,7 @@ impl Node {
     pub fn next_sibling(&self) -> DoogieResult<Option<Node>> {
         let next_node_ptr: *mut CMarkNodePtr;
         unsafe {
-            next_node_ptr = cmark_node_next(self.as_resource().pointer);
+            next_node_ptr = cmark_node_next(self.pointer());
         }
 
         if next_node_ptr.is_null() {
@@ -313,7 +348,7 @@ impl Node {
     pub fn prev_sibling(&self) -> DoogieResult<Option<Node>> {
         let prev_node_ptr: *mut CMarkNodePtr;
         unsafe {
-            prev_node_ptr = cmark_node_previous(self.as_resource().pointer);
+            prev_node_ptr = cmark_node_previous(self.pointer());
         }
 
         if prev_node_ptr.is_null() {
@@ -327,7 +362,7 @@ impl Node {
     pub fn parent(&self) -> DoogieResult<Option<Node>> {
         let parent_node_ptr: *mut CMarkNodePtr;
         unsafe {
-            parent_node_ptr = cmark_node_parent(self.as_resource().pointer);
+            parent_node_ptr = cmark_node_parent(self.pointer());
         }
 
         if parent_node_ptr.is_null() {
@@ -341,7 +376,7 @@ impl Node {
     pub fn first_child(&self) -> DoogieResult<Option<Node>> {
         let child_ptr: *mut CMarkNodePtr;
         unsafe {
-            child_ptr = cmark_node_first_child(self.as_resource().pointer);
+            child_ptr = cmark_node_first_child(self.pointer());
         }
 
         if child_ptr.is_null() {
@@ -355,7 +390,7 @@ impl Node {
     pub fn last_child(&self) -> DoogieResult<Option<Node>> {
         let child_ptr: *mut CMarkNodePtr;
         unsafe {
-            child_ptr = cmark_node_last_child(self.as_resource().pointer);
+            child_ptr = cmark_node_last_child(self.pointer());
         }
 
         if child_ptr.is_null() {
@@ -369,7 +404,7 @@ impl Node {
     ///
     /// The returned `Node` will share the underlying memory resource and manager of the current Node.
     pub fn itself(&self) -> DoogieResult<Node> {
-        Ok(Node::from_raw(self.as_resource().pointer)?)
+        Ok(Node::from_raw(self.pointer())?)
     }
 
 
@@ -379,9 +414,9 @@ impl Node {
     /// children.
     pub fn unlink(&mut self) {
         unsafe {
-            cmark_node_unlink(self.as_resource().pointer);
+            cmark_node_unlink(self.pointer());
         }
-        self.as_resource().manager.track_root(&self.as_resource().pointer);
+        self.manager().track_root(&self.pointer());
     }
 
     /// Append the given `Node` as the last child of the current `Node` if possible
@@ -395,13 +430,13 @@ impl Node {
         let result: i32;
         unsafe {
             result = cmark_node_append_child(
-                self.as_resource().pointer,
-                child.as_resource().pointer);
+                self.pointer(),
+                child.pointer());
         }
 
         match result {
             1 => {
-                child.as_resource().manager.untrack_root(&child.as_resource().pointer);
+                child.manager().untrack_root(&child.pointer());
                 Ok(())
             }
             i => Err(DoogieError::ReturnCode(i as u32)),
@@ -441,7 +476,7 @@ impl Node {
     /// Renders the document AST rooted at the current `Node` into textual CommonMark form
     pub fn render_commonmark(&self) -> String {
         unsafe {
-            CStr::from_ptr(cmark_render_commonmark(self.as_resource().pointer, 0))
+            CStr::from_ptr(cmark_render_commonmark(self.pointer(), 0))
                 .to_string_lossy()
                 .into_owned()
         }
@@ -450,7 +485,7 @@ impl Node {
     /// Renders the document AST rooted at the current `Node` into textual xml form
     pub fn render_xml(&self) -> String {
         unsafe {
-            CStr::from_ptr(cmark_render_xml(self.as_resource().pointer, 0))
+            CStr::from_ptr(cmark_render_xml(self.pointer(), 0))
                 .to_string_lossy()
                 .into_owned()
         }
@@ -459,18 +494,17 @@ impl Node {
 
     /// Returns an iterator over the `Node`s of the document subtree rooted at the current `Node`
     pub fn iter(&self) -> NodeIterator {
-        let resource = self.as_resource();
-        NodeIterator::new(resource.pointer)
+        NodeIterator::new(self.pointer())
     }
 
     /// Returns the start line from the original CMark document corresponding to the current `Node`
     pub fn get_start_line(&self) -> u32 {
-        unsafe { cmark_node_get_start_line(self.as_resource().pointer) as u32 }
+        unsafe { cmark_node_get_start_line(self.pointer()) as u32 }
     }
 
     /// Returns the start column from the original CMark document corresponding to this `Node
     pub fn get_start_column(&self) -> u32 {
-        unsafe { cmark_node_get_start_column(self.as_resource().pointer) as u32 }
+        unsafe { cmark_node_get_start_column(self.pointer()) as u32 }
     }
 }
 
@@ -1066,9 +1100,9 @@ mod tests {
     use super::{
         parse_document,
         Node,
+        NodeResource,
         CodeBlock,
         Text,
-        Resource,
         IterEventType,
         NodeType,
         cmark_node_new,
@@ -1125,12 +1159,14 @@ mod tests {
         let body = "\
         # My New Document
         ";
-        let resource: Resource;
+        let manager;
+        let pointer;
         {
             let node = parse_document(body);
-            resource = node.as_resource();
+            manager = node.manager();
+            pointer = node.pointer();
         }
-        assert!(resource.manager.roots.borrow().contains(&resource.pointer));
+        assert!(manager.roots.borrow().contains(&pointer));
     }
 
     #[test]
@@ -1205,11 +1241,11 @@ mod tests {
             .unwrap().expect("Root should have first child")
             .first_child()
             .unwrap().expect("List should have first item");
-        let manager = first_item.as_resource().manager;
+        let manager = first_item.manager();
 
         first_item.unlink();
 
-        assert!(manager.roots.borrow().contains(&first_item.as_resource().pointer));
+        assert!(manager.roots.borrow().contains(&first_item.pointer()));
         for (node, _) in root.iter() {
             if let Node::Text(node) = node {
                 assert!(! node.get_content().unwrap().contains("Item 1"));
@@ -1224,7 +1260,7 @@ mod tests {
 
         root_node.append_child(&mut child_node).unwrap();
 
-        assert!( ! root_node.as_resource().manager.is_tracking(&child_node.as_resource().pointer));
+        assert!( ! root_node.manager().is_tracking(&child_node.pointer()));
         assert_eq!(root_node.first_child().unwrap().expect("Root should have child"), child_node);
     }
 
