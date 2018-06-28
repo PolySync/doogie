@@ -2,6 +2,7 @@ extern crate try_from;
 
 use self::try_from::TryFrom;
 use super::{DoogieError, DoogieResult};
+use std::collections::HashSet;
 
 /// Each NodeIterator step is parameterized by one of these event.
 #[derive(PartialEq, Debug)]
@@ -40,9 +41,9 @@ impl TryFrom<u32> for IterEventType {
     }
 }
 
-/// Each Node in the document tree possesses a type attribute that corresponds to it's equivalent
-/// CommonMark semantic element.
-#[derive(PartialEq, Debug, Clone)]
+/// Each Node in the libcmark document AST possesses a type attribute that corresponds to its
+/// equivalent CommonMark semantic element.
+#[derive(PartialEq, Debug, Clone, Eq, Hash)]
 pub enum NodeType {
     CMarkNodeNone,
     CMarkNodeDocument,
@@ -126,7 +127,7 @@ impl TryFrom<u32> for NodeType {
     }
 }
 
-/// List Nodes have one of these types associated with them.
+/// List elements have one of these types associated with them
 #[derive(PartialEq)]
 pub enum ListType {
     CMarkNoList,
@@ -157,7 +158,7 @@ impl TryFrom<u32> for ListType {
     }
 }
 
-/// Ordered List items have a delimiter attribute.
+/// Ordered List items have a delimiter attribute
 #[derive(PartialEq)]
 pub enum DelimType {
     CMarkNoDelim,
@@ -186,4 +187,154 @@ impl TryFrom<u32> for DelimType {
             i => Err(DoogieError::BadEnum(i)),
         }
     }
+}
+
+/// Valid child types of Document elements
+lazy_static! {
+    pub static ref DOCUMENT_CHILDREN: HashSet<NodeType> = {
+        let mut children = HashSet::new();
+        children.insert(NodeType::CMarkNodeParagraph);
+        children.insert(NodeType::CMarkNodeHeading);
+        children.insert(NodeType::CMarkNodeThematicBreak);
+        children.insert(NodeType::CMarkNodeCodeBlock);
+        children.insert(NodeType::CMarkNodeHtmlBlock);
+        children.insert(NodeType::CMarkNodeCustomBlock);
+        children.insert(NodeType::CMarkNodeList);
+        children.insert(NodeType::CMarkNodeBlockQuote);
+        children
+    };
+}
+
+/// Valid child types of List elements
+lazy_static! {
+    pub static ref LIST_CHILDREN: HashSet<NodeType> = {
+        let mut children = HashSet::new();
+        children.insert(NodeType::CMarkNodeItem);
+        children
+    };
+}
+
+/// Valid child types of List Item elements
+lazy_static! {
+    pub static ref ITEM_CHILDREN: HashSet<NodeType> = { DOCUMENT_CHILDREN.clone() };
+}
+
+/// Valid child types of Block Quote elements
+lazy_static! {
+    pub static ref BLOCK_QUOTE_CHILDREN: HashSet<NodeType> = { DOCUMENT_CHILDREN.clone() };
+}
+
+/// Valid child types of Code Block elements
+lazy_static! {
+    pub static ref CODE_BLOCK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of HTML Block elements
+lazy_static! {
+    pub static ref HTML_BLOCK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of Custom Block elements
+lazy_static! {
+    pub static ref CUSTOM_BLOCK_CHILDREN: HashSet<NodeType> = {
+        let mut children = HashSet::new();
+        children.insert(NodeType::CMarkNodeBlockQuote);
+        children.insert(NodeType::CMarkNodeList);
+        children.insert(NodeType::CMarkNodeItem);
+        children.insert(NodeType::CMarkNodeCodeBlock);
+        children.insert(NodeType::CMarkNodeHtmlBlock);
+        children.insert(NodeType::CMarkNodeCustomBlock);
+        children.insert(NodeType::CMarkNodeParagraph);
+        children.insert(NodeType::CMarkNodeHeading);
+        children.insert(NodeType::CMarkNodeThematicBreak);
+        children.insert(NodeType::CMarkNodeText);
+        children.insert(NodeType::CMarkNodeSoftbreak);
+        children.insert(NodeType::CMarkNodeLinebreak);
+        children.insert(NodeType::CMarkNodeCode);
+        children.insert(NodeType::CMarkNodeHtmlInline);
+        children.insert(NodeType::CMarkNodeCustomInline);
+        children.insert(NodeType::CMarkNodeEmph);
+        children.insert(NodeType::CMarkNodeStrong);
+        children.insert(NodeType::CMarkNodeLink);
+        children.insert(NodeType::CMarkNodeImage);
+        children
+    };
+}
+
+/// Valid child types of Paragraph elements
+lazy_static! {
+    pub static ref PARAGRAPH_CHILDREN: HashSet<NodeType> = {
+        let mut children = HashSet::new();
+        children.insert(NodeType::CMarkNodeText);
+        children.insert(NodeType::CMarkNodeEmph);
+        children.insert(NodeType::CMarkNodeCode);
+        children.insert(NodeType::CMarkNodeLink);
+        children.insert(NodeType::CMarkNodeImage);
+        children.insert(NodeType::CMarkNodeSoftbreak);
+        children.insert(NodeType::CMarkNodeLinebreak);
+        children.insert(NodeType::CMarkNodeHtmlInline);
+        children.insert(NodeType::CMarkNodeCustomInline);
+        children.insert(NodeType::CMarkNodeStrong);
+        children
+    };
+}
+
+/// Valid child types of HEADING elements
+lazy_static! {
+    pub static ref HEADING_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
+}
+
+/// Valid child types of Thematic Break elements
+lazy_static! {
+    pub static ref THEMATIC_BREAK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of Text elements
+lazy_static! {
+    pub static ref TEXT_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of Soft Break elements
+lazy_static! {
+    pub static ref SOFT_BREAK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of Line Break elements
+lazy_static! {
+    pub static ref LINE_BREAK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of inline Code elements
+lazy_static! {
+    pub static ref CODE_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of inline HTML elements
+lazy_static! {
+    pub static ref INLINE_HTML_CHILDREN: HashSet<NodeType> = { HashSet::new() };
+}
+
+/// Valid child types of Custom Inline elements
+lazy_static! {
+    pub static ref CUSTOM_INLINE_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
+}
+
+/// Valid child types of Emph elements
+lazy_static! {
+    pub static ref EMPH_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
+}
+
+/// Valid child types of Strong elements
+lazy_static! {
+    pub static ref STRONG_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
+}
+
+/// Valid child types of Link elements
+lazy_static! {
+    pub static ref LINK_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
+}
+
+/// Valid child types of Image elements
+lazy_static! {
+    pub static ref IMAGE_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
 }

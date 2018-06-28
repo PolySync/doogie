@@ -17,6 +17,7 @@ fn main() {
     // Inform Cargo where cmark artifacts are located
     println!(
         "cargo:rustc-link-search=native={}",
-        dst.join("build").join("src").display());
+        dst.join("build").join("src").display()
+    );
     println!("cargo:rustc-link-lib=static=cmark");
 }
