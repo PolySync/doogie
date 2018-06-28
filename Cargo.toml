@@ -1,6 +1,6 @@
 [package]
 name = "doogie"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Devin Smith <dsmith@polysync.io>"]
 build = "build.rs"
 
