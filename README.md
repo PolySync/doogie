@@ -25,10 +25,10 @@ SOFTWARE.
 # Doogie
 
 ## Overview
-Doogie is a wrapper library around [cmark](https://github.com/commonmark/cmark), the `C` implementation of 
-[CommonMark](http://commonmark.org/). It provides some implicit memory safety around node allocation not 
-present in the `C` library.
- 
+Doogie is a wrapper library around [cmark](https://github.com/commonmark/cmark),
+the `C` implementation of [CommonMark](http://commonmark.org/). It provides
+implicit memory safety around node allocation not present in the `C` library.
+
 ## Getting Started
 
 ### Dependencies
@@ -36,13 +36,33 @@ present in the `C` library.
 
 ### Building
 
-`cargo build`
+Doogie can be built using cargo.
+
+* From the root of the project
+    ```
+    $ cargo build
+    ```
+
+### Installation
+
+Doogie can be integrated into your Rust project by adding it to your
+`Cargo.toml` file.
+
+* Add Doogie to `Cargo.toml`
+    ```
+    [dependencies]
+    doogie = { git="https://github.com/PolySync/doogie", branch="devel"}
+    ```
 
 ## Usage
 
-### Examples
+The basic workflow is to use `parse_document` to parse the textual content of
+a Markdown document into the CommonMark AST. You will get a handle to the root
+`Document` node with which you can traverse and manipulate the AST. You can
+export the document back into a textual form using any of the render methods
+such as `Node::render_commonmark()`.
 
-``` rust
+```Rust
 use doogie::parse_document;
 
 let document = "# My Great Document \
@@ -53,34 +73,72 @@ let document = "# My Great Document \
 
 let root = parse_document(document);
 
-let renderer = root.capabilities.render.as_ref().unwrap();
-println!("{}", renderer.render_xml());
+println!("{}", root.render_xml());
 ```
 
-### API
+### Examples
 
-The API is organized around capability objects attached to Nodes. Specifically
+* Transform all text into uppercase
+    ```Rust
+    use doogie::{parse_document, Node};
 
-* `NodeGetter` 
-* `NodeSetter` 
-* `NodeTraverser` 
-* `StructuralMutator` 
-* `NodeRenderer` 
-* `NodeDestructor` 
+    let document = "# My Great Document \
+    \
+    * Item 1 \
+    * Item 2 \
+    * Item 3";
 
-Their documentation is best viewed in rustdoc. You can run `cargo doc --open` to view it in your browser.
+    let root = parse_document(document);
+
+    for (mut node, _) in root.iter() {
+        if let Node::Text(ref mut node) = node {
+            let content = node.get_content().unwrap();
+            node.set_content(&content.to_uppercase()).unwrap();
+        }
+    }
+
+    ```
+* Remove all level 6 `Heading` nodes
+    ```Rust
+    use doogie::{parse_document, Node};
+    
+    let document = "# My Great Document \
+        \
+        * Item 1 \
+        * Item 2 \
+        * Item 3";
+    
+    let root = parse_document(document);
+    
+    for (mut node, _) in root.iter() {
+        let prune = match node {
+            Node::Heading(ref heading) => heading.get_level() == 6,
+            _ => false
+        };
+    
+        if prune {
+            node.unlink();
+        }
+    }
+    ```
 
 ## Tests
 
-The tests are located inline with the module code. There is a mix of property based and traditional unit style tests 
-that mainly provide coverage around Doogie's capability system and memory safety.
+The tests are located inline with the module code in `src/lib.rs`.
+
+### Building
+
+To build jsut the tests run `$ cargo build --tests`.
 
 ### Running Tests
 
-`cargo test`
+The tests are run by invoking `$ cargo test`. This will build them automatically
+if necessary.
 
 # License
 
-© 2018, PolySync Technologies, Inc., Devin Smith <dsmith@polysync.io>
+© 2018, PolySync Technologies, Inc.
 
-[MIT](https://github.com/PolySync/doogie/blob/master/LICENSE)
+* Devin Smith <dsmith@polysync.io>
+
+Please see the [LICENSE](./LICENSE) file for more details
