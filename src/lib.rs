@@ -991,6 +991,52 @@ impl Image {
 ///
 /// NodeIterator is a wrapper around the libcmark iterator and so traverses the subtree using the
 /// same scheme documented [here](https://github.com/commonmark/cmark/blob/a5c83d7a426bda38aac838f9815664f6189d3404/src/cmark.h#L151).
+///
+/// # Examples
+///
+/// Transform all Text Nodes to uppercase
+/// ```
+/// use doogie::{parse_document, Node};
+///
+/// let document = "# My Great Document \
+///     \
+///     * Item 1 \
+///     * Item 2 \
+///     * Item 3";
+///
+/// let root = parse_document(document);
+///
+/// for (mut node, _) in root.iter() {
+///     if let Node::Text(ref mut node) = node {
+///         let content = node.get_content().unwrap();
+///         node.set_content(&content.to_uppercase()).unwrap();
+///     }
+/// }
+/// ```
+///
+/// Remove all level 6 Heading Nodes
+/// ```
+/// use doogie::{parse_document, Node};
+///
+/// let document = "# My Great Document \
+///     \
+///     * Item 1 \
+///     * Item 2 \
+///     * Item 3";
+///
+/// let root = parse_document(document);
+///
+/// for (mut node, _) in root.iter() {
+///     let prune = match node {
+///         Node::Heading(ref heading) => heading.get_level() == 6,
+///         _ => false
+///     };
+///
+///     if prune {
+///         node.unlink();
+///     }
+/// }
+/// ```
 pub struct NodeIterator {
     /// Raw CMark iterator pointer.
     pointer: *mut CMarkIterPtr,

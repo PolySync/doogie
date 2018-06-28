@@ -62,7 +62,7 @@ a Markdown document into the CommonMark AST. You will get a handle to the root
 export the document back into a textual form using any of the render methods
 such as `Node::render_commonmark()`.
 
-```
+```Rust
 use doogie::parse_document;
 
 let document = "# My Great Document \
@@ -73,15 +73,14 @@ let document = "# My Great Document \
 
 let root = parse_document(document);
 
-
 println!("{}", root.render_xml());
 ```
 
 ### Examples
 
 * Transform all text into uppercase
-    ```
-    use doogie::parse_document;
+    ```Rust
+    use doogie::{parse_document, Node};
 
     let document = "# My Great Document \
     \
@@ -91,8 +90,8 @@ println!("{}", root.render_xml());
 
     let root = parse_document(document);
 
-    for (node, _) in root.iter() {
-        if let Node::Text(ref node) = node {
+    for (mut node, _) in root.iter() {
+        if let Node::Text(ref mut node) = node {
             let content = node.get_content().unwrap();
             node.set_content(&content.to_uppercase()).unwrap();
         }
@@ -100,22 +99,25 @@ println!("{}", root.render_xml());
 
     ```
 * Remove all level 6 `Heading` nodes
-    ```
-    use doogie::parse_document;
-
+    ```Rust
+    use doogie::{parse_document, Node};
+    
     let document = "# My Great Document \
-    \
-    * Item 1 \
-    * Item 2 \
-    * Item 3";
-
+        \
+        * Item 1 \
+        * Item 2 \
+        * Item 3";
+    
     let root = parse_document(document);
-
-    for (node, _) in root.iter() {
-        if let Node::Heading(ref heading) = node {
-            if heading.get_level() == 6 {
-                heading.unlink();
-            }
+    
+    for (mut node, _) in root.iter() {
+        let prune = match node {
+            Node::Heading(ref heading) => heading.get_level() == 6,
+            _ => false
+        };
+    
+        if prune {
+            node.unlink();
         }
     }
     ```
