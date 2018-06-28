@@ -1,8 +1,8 @@
 use std::error;
+use std::ffi::NulError;
 use std::fmt;
 use std::io::Error as IOError;
 use std::str::Utf8Error;
-use std::ffi::NulError;
 
 /// Error type for the Doogie crate
 #[derive(Debug)]
@@ -14,7 +14,7 @@ pub enum DoogieError {
     IOError(IOError),
     ResourceUnavailable,
     NodeNone,
-    FmtError(fmt::Error)
+    FmtError(fmt::Error),
 }
 
 impl fmt::Display for DoogieError {
@@ -26,8 +26,10 @@ impl fmt::Display for DoogieError {
             DoogieError::ReturnCode(code) => write!(f, "CMark return code: {}", code),
             DoogieError::BadEnum(num) => write!(f, "Bad Enum Value: {}", num),
             DoogieError::ResourceUnavailable => write!(f, "The resource is no longer available"),
-            DoogieError::NodeNone => write!(f, "CMark has erroneously returned null for this operation"),
-            DoogieError::FmtError(ref err) => write!(f, "FmtError: {}", err)
+            DoogieError::NodeNone => {
+                write!(f, "CMark has erroneously returned null for this operation")
+            }
+            DoogieError::FmtError(ref err) => write!(f, "FmtError: {}", err),
         }
     }
 }
@@ -42,7 +44,7 @@ impl error::Error for DoogieError {
             DoogieError::BadEnum(_num) => "libcmark returned an invalid node type.",
             DoogieError::ResourceUnavailable => "The resource is no longer available.",
             DoogieError::NodeNone => "libcmark returned Node::None which is an error.",
-            DoogieError::FmtError(ref err) => err.description()
+            DoogieError::FmtError(ref err) => err.description(),
         }
     }
 
@@ -55,7 +57,7 @@ impl error::Error for DoogieError {
             DoogieError::BadEnum(_num) => None,
             DoogieError::ResourceUnavailable => None,
             DoogieError::NodeNone => None,
-            DoogieError::FmtError(ref err) => Some(err)
+            DoogieError::FmtError(ref err) => Some(err),
         }
     }
 }

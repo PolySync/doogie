@@ -216,30 +216,22 @@ lazy_static! {
 
 /// Valid child types of List Item elements
 lazy_static! {
-    pub static ref ITEM_CHILDREN: HashSet<NodeType> = {
-        DOCUMENT_CHILDREN.clone()
-    };
+    pub static ref ITEM_CHILDREN: HashSet<NodeType> = { DOCUMENT_CHILDREN.clone() };
 }
 
 /// Valid child types of Block Quote elements
 lazy_static! {
-    pub static ref BLOCK_QUOTE_CHILDREN: HashSet<NodeType> = {
-        DOCUMENT_CHILDREN.clone()
-    };
+    pub static ref BLOCK_QUOTE_CHILDREN: HashSet<NodeType> = { DOCUMENT_CHILDREN.clone() };
 }
 
 /// Valid child types of Code Block elements
 lazy_static! {
-    pub static ref CODE_BLOCK_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref CODE_BLOCK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of HTML Block elements
 lazy_static! {
-    pub static ref HTML_BLOCK_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref HTML_BLOCK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of Custom Block elements
@@ -254,7 +246,7 @@ lazy_static! {
         children.insert(NodeType::CMarkNodeCustomBlock);
         children.insert(NodeType::CMarkNodeParagraph);
         children.insert(NodeType::CMarkNodeHeading);
-        children.insert(NodeType::CMarkNodeThematicBreak );
+        children.insert(NodeType::CMarkNodeThematicBreak);
         children.insert(NodeType::CMarkNodeText);
         children.insert(NodeType::CMarkNodeSoftbreak);
         children.insert(NodeType::CMarkNodeLinebreak);
@@ -271,7 +263,7 @@ lazy_static! {
 
 /// Valid child types of Paragraph elements
 lazy_static! {
-    pub static ref PARAGRAPH_CHILDREN: HashSet<NodeType>  ={
+    pub static ref PARAGRAPH_CHILDREN: HashSet<NodeType> = {
         let mut children = HashSet::new();
         children.insert(NodeType::CMarkNodeText);
         children.insert(NodeType::CMarkNodeEmph);
@@ -289,84 +281,60 @@ lazy_static! {
 
 /// Valid child types of HEADING elements
 lazy_static! {
-    pub static ref HEADING_CHILDREN: HashSet<NodeType> = {
-        PARAGRAPH_CHILDREN.clone()
-    };
+    pub static ref HEADING_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
 }
 
 /// Valid child types of Thematic Break elements
 lazy_static! {
-    pub static ref THEMATIC_BREAK_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref THEMATIC_BREAK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of Text elements
 lazy_static! {
-    pub static ref TEXT_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref TEXT_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of Soft Break elements
 lazy_static! {
-    pub static ref SOFT_BREAK_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref SOFT_BREAK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of Line Break elements
 lazy_static! {
-    pub static ref LINE_BREAK_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref LINE_BREAK_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of inline Code elements
 lazy_static! {
-    pub static ref CODE_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref CODE_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of inline HTML elements
 lazy_static! {
-    pub static ref INLINE_HTML_CHILDREN: HashSet<NodeType> = {
-        HashSet::new()
-    };
+    pub static ref INLINE_HTML_CHILDREN: HashSet<NodeType> = { HashSet::new() };
 }
 
 /// Valid child types of Custom Inline elements
 lazy_static! {
-    pub static ref CUSTOM_INLINE_CHILDREN: HashSet<NodeType> = {
-        PARAGRAPH_CHILDREN.clone()
-    };
+    pub static ref CUSTOM_INLINE_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
 }
 
 /// Valid child types of Emph elements
 lazy_static! {
-    pub static ref EMPH_CHILDREN: HashSet<NodeType> = {
-        PARAGRAPH_CHILDREN.clone()
-    };
+    pub static ref EMPH_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
 }
 
 /// Valid child types of Strong elements
 lazy_static! {
-    pub static ref STRONG_CHILDREN: HashSet<NodeType> = {
-        PARAGRAPH_CHILDREN.clone()
-    };
+    pub static ref STRONG_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
 }
 
 /// Valid child types of Link elements
 lazy_static! {
-    pub static ref LINK_CHILDREN: HashSet<NodeType> = {
-        PARAGRAPH_CHILDREN.clone()
-    };
+    pub static ref LINK_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
 }
 
 /// Valid child types of Image elements
 lazy_static! {
-    pub static ref IMAGE_CHILDREN: HashSet<NodeType> = {
-        PARAGRAPH_CHILDREN.clone()
-    };
+    pub static ref IMAGE_CHILDREN: HashSet<NodeType> = { PARAGRAPH_CHILDREN.clone() };
 }
